@@ -12,7 +12,6 @@ Operations:
 
 import socket
 import enum
-import importlib
 import time
 from google.protobuf.descriptor_pb2 import FileDescriptorProto
 
@@ -125,7 +124,7 @@ def dummy_source(freq=10):
 
     registerBytes = op_register(TrafficLightDetection.DESCRIPTOR.file)
     addWriterBytes = op_add_writer(channel, dataType)
-    
+
     sleepTime = 1 / freq
     sendBytes = registerBytes + addWriterBytes
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -160,8 +159,6 @@ def dummy_sink():
             print(f"### Receive: {data}")
 
 
-
 if __name__ == '__main__':
     # dummy_sink()
     dummy_source(freq=1)
-
