@@ -27,34 +27,34 @@ class OP(enum.Enum):
 
 
 def op_register(file_desc) -> bytes:
+    all_deps = []
 
-    def get_desc_str(file_desc, count):
-        """
-        register proto message desc file.
-        """
-        ret = b''
-        for dep in file_desc.dependencies:
-            ret, count = get_desc_str(dep, count)
+    def find_all_deps(_file_desc):
+        nonlocal all_deps
+        for dep in _file_desc.dependencies:
+            find_all_deps(dep)
+        all_deps.append(_file_desc)
+    find_all_deps(file_desc)
+
+    opType = OP.OP_REGISTER_DESC
+    count = 1
+    desc_strs = []
+    # all_deps = find_all_deps(file_desc)
+    for dep in all_deps:
+        desc_str = b''
         proto = FileDescriptorProto()
-        file_desc.CopyToProto(proto)
-        proto.name = file_desc.name
+        dep.CopyToProto(proto)
+        proto.name = dep.name
         dataBytes = proto.SerializeToString()
         dataLen = len(dataBytes)
-        ret += dataLen.to_bytes(4, byteorder='little')
-        ret += dataBytes
-        count += 1
-        return ret, count
 
-    count = 0
-    desc_str, count = get_desc_str(file_desc, count)
-    opType = OP.OP_REGISTER_DESC
+        desc_str += opType.value.to_bytes(1, byteorder='little')
+        desc_str += count.to_bytes(4, byteorder='little')
+        desc_str += dataLen.to_bytes(4, byteorder='little')
+        desc_str += dataBytes
+        desc_strs.append(desc_str)
 
-    ret = b""
-    ret += opType.value.to_bytes(1, byteorder='little')
-    ret += count.to_bytes(4, byteorder='little')
-    ret += desc_str
-
-    return ret
+    return desc_strs
 
 
 def op_add_reader(chan: str, data: str) -> bytes:
@@ -122,14 +122,17 @@ def dummy_source(freq=10):
     channel = "/apollo/perception/traffic_light"
     dataType = "apollo.perception.TrafficLightDetection"
 
-    registerBytes = op_register(TrafficLightDetection.DESCRIPTOR.file)
+    registerBytes_list = op_register(TrafficLightDetection.DESCRIPTOR.file)
     addWriterBytes = op_add_writer(channel, dataType)
 
+    # sendBytes = registerBytes + addWriterBytes
+    sendBytes_list = registerBytes_list + [addWriterBytes]
     sleepTime = 1 / freq
-    sendBytes = registerBytes + addWriterBytes
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        s.sendall(sendBytes)
+
+        for sendBytes in sendBytes_list:
+            s.sendall(sendBytes)
 
         # time.sleep(1000000)
         while True:
