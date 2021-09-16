@@ -211,3 +211,4 @@ $RECYCLE.BIN/
 # project files
 cyber/**/*.py
 modules/**/*.py
+trash/
