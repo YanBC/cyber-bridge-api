@@ -12,8 +12,9 @@ Operations:
 
 import socket
 import enum
-import time
+from typing import List
 from google.protobuf.descriptor_pb2 import FileDescriptorProto
+from google.protobuf.message import Message
 
 
 ####################################
@@ -26,7 +27,7 @@ class OP(enum.Enum):
     OP_PUBLISH = 4
 
 
-def op_register(file_desc) -> bytes:
+def op_register(file_desc) -> List[bytes]:
     all_deps = []
 
     def find_all_deps(_file_desc):
@@ -109,30 +110,129 @@ def op_publish(chan: str, message: bytes) -> bytes:
 
 
 ####################################
-# dummy source and sinks
+# Messenger
 ####################################
-def dummy_source(freq=10):
-    import random
-    import time
-    from google.protobuf.descriptor_pb2 import FileDescriptorProto
-    from modules.perception.proto.traffic_light_detection_pb2 import TrafficLightDetection
+class BufferedSocket:
+    def __init__(self, host:str, port:int) -> None:
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.remote_host = host
+        self.remote_port = port
+        self._recv_carry_bytes = b""
 
-    host = '127.0.0.1'
-    port = 9090
-    channel = "/apollo/perception/traffic_light"
-    dataType = "apollo.perception.TrafficLightDetection"
+    def connect(self) -> bool:
+        self._socket.connect((self.remote_host, self.remote_port))
+        return True
 
-    registerBytes_list = op_register(TrafficLightDetection.DESCRIPTOR.file)
-    addWriterBytes = op_add_writer(channel, dataType)
+    def send(self, msgBytes:List[bytes]) -> bool:
+        for msg in msgBytes:
+            self._socket.sendall(msg)
+        return True
 
-    # sendBytes = registerBytes + addWriterBytes
-    sendBytes_list = registerBytes_list + [addWriterBytes]
-    sleepTime = 1 / freq
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
+    def recv(self, msgLength:int=2**20) -> dict:
+        '''
+        raise ValueError
+        '''
+        ret = dict()
+
+        dataBytes = self._socket.recv(msgLength)
+        if len(dataBytes) == 0:
+            return ret
+        dataBytes = self._recv_carry_bytes + dataBytes
+        offset = 0
+
+        dataLen = len(dataBytes)
+        while dataLen - offset > 1:
+            if dataBytes[offset] != 0x04:
+                raise ValueError
+            else:
+                offset += 1
+
+                if dataLen - offset < 4:
+                    break
+                sizeBytes = dataBytes[offset:offset+4]
+                offset += 4
+                chanSize = int.from_bytes(sizeBytes, byteorder='little')
+
+                if dataLen - offset < chanSize:
+                    break
+                chanBytes = dataBytes[offset:offset+chanSize]
+                offset += chanSize
+
+                if dataLen - offset < 4:
+                    break
+                sizeBytes = dataBytes[offset:offset+4]
+                offset += 4
+                msgSize = int.from_bytes(sizeBytes, byteorder='little')
+
+                if dataLen - offset < msgSize:
+                    break
+                msgBytes = dataBytes[offset:offset+msgSize]
+                offset += msgSize
+
+                channel_name = chanBytes.decode()
+                ret[channel_name] = msgBytes
+
+        self._recv_carry_bytes = dataBytes[offset:]
+        return ret
+
+
+class CyberBridgeClient:
+    def __init__(
+                self, host:str, port:int,
+                encoders:list, decoders:list) -> None:
+        self.socket = BufferedSocket(host, port)
+        self.encoders = encoders
+        self.decoders = decoders
+        self.msg_map = dict()
+        for decoder in self.decoders:
+            self.msg_map[decoder.channel] = decoder.pbCls
+
+    def initialize(self) -> bool:
+        msg_list = []
+        for e in self.encoders:
+            msg_list += e.get_register_bytes()
+        msg_list += [e.get_add_writer_bytes() for e in self.encoders]
+        msg_list += [d.get_add_reader_bytes() for d in self.decoders]
+
+        if self.socket.connect():
+            return self.socket.send(msg_list)
+        else:
+            return False
+
+    def send_pb_messages(self, pb_msgs:List[bytes]) -> bool:
+        return self.socket.send(pb_msgs)
+
+    def recv_pb_messages(self) -> List[Message]:
+        msg_dict = self.socket.recv()
+        ret = []
+        for channel_name in msg_dict.keys():
+            if channel_name in self.msg_map:
+                msgBytes = msg_dict[channel_name]
+                pbCls = self.msg_map[channel_name]()
+                pbCls.ParseFromString(msgBytes)
+                ret.append(pbCls)
+        return ret
+
+
+if __name__ == '__main__':
+    def dummy_source(cyber_bridge_sock, freq=10):
+        import random
+        import time
+        from google.protobuf.descriptor_pb2 import FileDescriptorProto
+        from modules.perception.proto.traffic_light_detection_pb2 import TrafficLightDetection
+
+        channel = "/apollo/perception/traffic_light"
+        dataType = "apollo.perception.TrafficLightDetection"
+
+        registerBytes_list = op_register(TrafficLightDetection.DESCRIPTOR.file)
+        addWriterBytes = op_add_writer(channel, dataType)
+
+        # sendBytes = registerBytes + addWriterBytes
+        sendBytes_list = registerBytes_list + [addWriterBytes]
+        sleepTime = 1 / freq
 
         for sendBytes in sendBytes_list:
-            s.sendall(sendBytes)
+            cyber_bridge_sock.send([sendBytes])
 
         # time.sleep(1000000)
         while True:
@@ -143,25 +243,26 @@ def dummy_source(freq=10):
                 msgBytes += tmp.to_bytes(1, byteorder='little')
             publishBytes = op_publish(channel, msgBytes)
             print(f"### Send: {publishBytes}")
-            s.sendall(publishBytes)
+            cyber_bridge_sock.send([publishBytes])
 
+    def dummy_sink(cyber_bridge_sock):
+        from modules.control.proto.control_cmd_pb2 import ControlCommand
+        channel = "/apollo/control"
+        dataType = "apollo.control.ControlCommand"
 
-def dummy_sink():
-    host = '127.0.0.1'
-    port = 9090
-    channel = "/apollo/control"
-    dataType = "apollo.control.ControlCommand"
+        registerBytes_list = []
+        # registerBytes_list += op_register(ControlCommand.DESCRIPTOR.file)
+        addReaderBytes = op_add_reader(channel, dataType)
 
-    sendBytes = op_add_reader(channel, dataType)
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.connect((host, port))
-        s.sendall(sendBytes)
-
+        sendBytes_list = registerBytes_list + [addReaderBytes]
+        cyber_bridge_sock.send(sendBytes_list)
         while True:
-            data = s.recv(65536)
+            data = cyber_bridge_sock.recv(65536)
             print(f"### Receive: {data}")
 
-
-if __name__ == '__main__':
-    # dummy_sink()
-    dummy_source(freq=1)
+    host = '172.17.0.3'
+    port = 9090
+    cb_sock = BufferedSocket(host, port)
+    cb_sock.connect()
+    # dummy_sink(cb_sock)
+    dummy_source(cb_sock, freq=1)

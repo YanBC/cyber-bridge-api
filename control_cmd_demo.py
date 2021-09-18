@@ -16,6 +16,7 @@ import datetime
 import glob
 import logging
 import math
+from modules.control.proto.control_cmd_pb2 import ControlCommand
 import os
 import numpy.random as random
 import re
@@ -35,18 +36,6 @@ try:
 except ImportError:
     raise RuntimeError(
         'cannot import numpy, make sure numpy package is installed')
-
-# cyber_bridge
-import socket
-from google.protobuf.descriptor_pb2 import FileDescriptorProto
-from modules.control.proto.control_cmd_pb2 import ControlCommand
-from modules.canbus.proto.chassis_pb2 import Chassis
-from cyber_bridge_client import (
-    op_register,
-    op_add_writer,
-    op_add_reader,
-    op_publish
-)
 
 # ==============================================================================
 # -- Find CARLA module ---------------------------------------------------------
@@ -721,7 +710,7 @@ class ControlCmdSender:
         msgBytes = pbCtrl.SerializeToString()
         publishBytes = op_publish(self.channel, msgBytes)
         self.socket.sendall(publishBytes)
-        
+
         return True
 
 
@@ -747,7 +736,7 @@ class ControlCmdReceiver:
         offset += 4
 
         msgSize = int.from_bytes(msgSizeBytes, byteorder='little')
-        
+
         msgBytes = pbCtrlBytes[offset:offset+msgSize]
 
         pbCtrl = ControlCommand()
@@ -767,6 +756,10 @@ class ControlCmdReceiver:
         return carlaCtrl
 
 
+from encoders.apollo_control_encoder import ApolloControlEncoder
+from decoders.apollo_control_decoder import ApolloControlDecoder
+from cyber_bridge_client import CyberBridgeClient
+
 
 def game_loop(args):
     """
@@ -778,17 +771,11 @@ def game_loop(args):
     pygame.font.init()
     world = None
 
-    host = '127.0.0.1'
-    send_port = 9091
-    recv_port = 9092
-    channel = "/apollo/control"
-    dataType = "apollo.control.ControlCommand"
-
     try:
         if args.seed:
             random.seed(args.seed)
 
-        client = carla.Client(args.host, args.port)
+        client = carla.Client(args.carla, args.carla_port)
         client.set_timeout(4.0)
 
         traffic_manager = client.get_trafficmanager()
@@ -821,8 +808,23 @@ def game_loop(args):
 
         clock = pygame.time.Clock()
 
-        cyber_bridge_sender = ControlCmdSender(host, send_port, channel, dataType)
-        cyber_bridge_recver = ControlCmdReceiver(host, recv_port, channel, dataType)
+        apollo_host = args.apollo
+        apollo_port = args.apollo_port
+        channel = "/apollo/control"
+        dataType = "apollo.control.ControlCommand"
+
+        ctrl_encoder = ApolloControlEncoder(
+                ControlCommand,
+                channel,
+                dataType)
+        ctrl_decoder = ApolloControlDecoder(
+                ControlCommand,
+                channel,
+                dataType)
+        cb_client = CyberBridgeClient(
+                apollo_host, apollo_port,
+                [ctrl_encoder], [ctrl_decoder])
+        cb_client.initialize()
 
         while True:
             clock.tick()
@@ -848,11 +850,15 @@ def game_loop(args):
 
             control = agent.run_step()
 
-            cyber_bridge_sender.send(control)
-            apollo_control = cyber_bridge_recver.recv()
+            pbCtrl = ctrl_encoder.carlaToProtobuf(control)
+            send_list = [ctrl_encoder.get_publish_bytes(pbCtrl)]
+            cb_client.send_pb_messages(send_list)
 
-            apollo_control.manual_gear_shift = False
-            world.player.apply_control(apollo_control)
+            recv_list = cb_client.recv_pb_messages()
+            if len(recv_list) > 0:
+                apollo_control = ctrl_decoder.protobufToCarla(recv_list[0])
+                apollo_control.manual_gear_shift = False
+                world.player.apply_control(apollo_control)
 
     finally:
 
@@ -884,16 +890,27 @@ def main():
         dest='debug',
         help='Print debug information')
     argparser.add_argument(
-        '--host',
+        '--carla',
         metavar='H',
         default='127.0.0.1',
-        help='IP of the host server (default: 127.0.0.1)')
+        help='IP of the carla server (default: 127.0.0.1)')
     argparser.add_argument(
-        '-p', '--port',
+        '--carla-port',
         metavar='P',
         default=2000,
         type=int,
-        help='TCP port to listen to (default: 2000)')
+        help='carla port to connect to (default: 2000)')
+    argparser.add_argument(
+        '--apollo',
+        metavar='H',
+        default='127.0.0.1',
+        help='IP of the apollo server (default: 127.0.0.1)')
+    argparser.add_argument(
+        '--apollo-port',
+        metavar='P',
+        default=9090,
+        type=int,
+        help='apollo port to connect to (default: 2000)')
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
@@ -936,7 +953,7 @@ def main():
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
 
-    logging.info('listening to server %s:%s', args.host, args.port)
+    logging.info('listening to server %s:%s', args.carla, args.carla_port)
 
     print(__doc__)
 
