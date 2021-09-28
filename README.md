@@ -1,6 +1,6 @@
 ## Compile protos
 ```bash
-protoc -I . --python_out . modules/perception/proto/traffic_light_detection.proto
+bash compile_proto.sh
 ```
 
 ## Run control cmd demo
