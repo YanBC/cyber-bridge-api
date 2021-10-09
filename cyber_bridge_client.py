@@ -114,12 +114,14 @@ def op_publish(chan: str, message: bytes) -> bytes:
 ####################################
 class BufferedSocket:
     def __init__(self, host:str, port:int) -> None:
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket = None
         self.remote_host = host
         self.remote_port = port
         self._recv_carry_bytes = b""
 
     def connect(self) -> bool:
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket.settimeout(0.5)
         self._socket.connect((self.remote_host, self.remote_port))
         return True
 
@@ -134,7 +136,11 @@ class BufferedSocket:
         '''
         ret = dict()
 
-        dataBytes = self._socket.recv(msgLength)
+        try:
+            dataBytes = self._socket.recv(msgLength)
+        except socket.timeout:
+            dataBytes = b''
+
         if len(dataBytes) == 0:
             return ret
         dataBytes = self._recv_carry_bytes + dataBytes

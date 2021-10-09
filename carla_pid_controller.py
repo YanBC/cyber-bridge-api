@@ -48,16 +48,6 @@ def get_args():
         '--adc',
         default='hero',
         help='ego vehicle name')
-    # argparser.add_argument(
-    #     '--show',
-    #     default=False,
-    #     type=bool,
-    #     help='display adc in pygame')
-    # argparser.add_argument(
-    #     '--res',
-    #     metavar='WIDTHxHEIGHT',
-    #     default='1280x720',
-    #     help='Window resolution (default: 1280x720)')
     argparser.add_argument(
         "-a", "--agent", type=str,
         choices=["Behavior", "Basic"],
@@ -79,7 +69,7 @@ def get_args():
         help="Apollo control channel name"
     )
     argparser.add_argument(
-        '--msgtyep',
+        '--msgtype',
         default="apollo.control.ControlCommand",
         help="Apollo control channel message type"
     )
@@ -90,8 +80,6 @@ def get_args():
         help='whether to display routing waypoint')
 
     args = argparser.parse_args()
-    # if args.show:
-    #     args.width, args.height = [int(x) for x in args.res.split('x')]
     return args
 
 
@@ -131,7 +119,7 @@ def main():
     apollo_host = args.apollo
     apollo_port = args.apollo_port
     apollo_channel = args.channel
-    apollo_msgType = args.msgtyep
+    apollo_msgType = args.msgtype
 
     ctrl_encoder = ApolloControlEncoder(
             ControlCommand,
