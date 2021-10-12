@@ -18,6 +18,8 @@ from examples.manual_control import (
 from modules.control.proto.control_cmd_pb2 import ControlCommand
 from decoders.apollo_control_decoder import ApolloControlDecoder
 from cyber_bridge_client import CyberBridgeClient
+from sensors.location_sensor import LocationSensor
+from sensors.base_sensor import SensorManager
 
 
 class KeyboardControl:
@@ -212,9 +214,6 @@ def main():
                     player_name = player.type_id
                     break
 
-        # TODO: setup sensors here
-        pass
-
         if args.show:
             display = pygame.display.set_mode(
                 (args.width, args.height),
@@ -237,6 +236,11 @@ def main():
                 apollo_host, apollo_port,
                 [], [ctrl_decoder])
         cb_client.initialize()
+
+        # TODO: setup sensors here
+        location_sensor = LocationSensor(player)
+        sensor_manager = SensorManager(
+                apollo_host, apollo_port, [location_sensor])
 
         while True:
             sim_world.tick()
@@ -263,6 +267,8 @@ def main():
                 print("No control message received, applying emergency stop")
                 apollo_control = emergency_stop()
             player.apply_control(apollo_control)
+
+            sensor_manager.send_apollo_msgs()
 
     finally:
         settings = sim_world.get_settings()
