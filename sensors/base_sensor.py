@@ -109,5 +109,9 @@ class SensorManager:
     def send_apollo_msgs(self) -> bool:
         msgList = []
         for s in self.sensors:
-            msgList.append(s.get_bytes())
-        return self.bridge.send_pb_messages(msgList)
+            msg = b''
+            while len(msg) == 0:
+                msg = s.get_bytes()
+            msgList.append(msg)
+        ret = self.bridge.send_pb_messages(msgList)
+        return ret

@@ -19,6 +19,8 @@ from modules.control.proto.control_cmd_pb2 import ControlCommand
 from decoders.apollo_control_decoder import ApolloControlDecoder
 from cyber_bridge_client import CyberBridgeClient
 from sensors.location_sensor import LocationSensor
+from sensors.chassis_sensor import ChassisSensor
+from sensors.trajectory_sensor import TrajectorySensor
 from sensors.base_sensor import SensorManager
 
 
@@ -239,8 +241,11 @@ def main():
 
         # TODO: setup sensors here
         location_sensor = LocationSensor(player)
+        chassis_sensor = ChassisSensor(player)
+        trajectory_sensor = TrajectorySensor(player)
         sensor_manager = SensorManager(
-                apollo_host, apollo_port, [location_sensor])
+                apollo_host, apollo_port,
+                [location_sensor, chassis_sensor, trajectory_sensor])
 
         while True:
             sim_world.tick()
@@ -266,6 +271,8 @@ def main():
             else:
                 print("No control message received, applying emergency stop")
                 apollo_control = emergency_stop()
+                # print("No control message received, applying previous control")
+                # apollo_control = player.get_control()
             player.apply_control(apollo_control)
 
             sensor_manager.send_apollo_msgs()

@@ -18,11 +18,7 @@ class ApolloControlDecoder(BaseDecoder):
         carlaCtrl.steer = pbCtrl.steering_target / 100
         carlaCtrl.brake = pbCtrl.brake / 100
         carlaCtrl.hand_brake = pbCtrl.parking_brake
-
-        if pbCtrl.gear_location == Chassis.GearPosition.GEAR_REVERSE:
-            carlaCtrl.reverse = True
-        else:
-            carlaCtrl.reverse = False
+        carlaCtrl.reverse = pbCtrl.gear_location == Chassis.GearPosition.GEAR_REVERSE
 
         return carlaCtrl
 

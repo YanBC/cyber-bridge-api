@@ -121,7 +121,8 @@ class BufferedSocket:
 
     def connect(self) -> bool:
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._socket.settimeout(0.5)
+        # self._socket.settimeout(0.05)
+        self._socket.settimeout(0.1)
         self._socket.connect((self.remote_host, self.remote_port))
         return True
 
@@ -130,16 +131,17 @@ class BufferedSocket:
             self._socket.sendall(msg)
         return True
 
-    def recv(self, msgLength:int=2**20) -> dict:
+    def recv(self, msgLength:int=2**10) -> dict:
         '''
         raise ValueError
         '''
         ret = dict()
+        dataBytes = b''
 
         try:
             dataBytes = self._socket.recv(msgLength)
         except socket.timeout:
-            dataBytes = b''
+            print("socket receive timed out")
 
         if len(dataBytes) == 0:
             return ret
@@ -151,32 +153,37 @@ class BufferedSocket:
             if dataBytes[offset] != 0x04:
                 raise ValueError
             else:
-                offset += 1
+                tmp_offset = offset + 1
 
-                if dataLen - offset < 4:
+                # channel name size
+                if dataLen - tmp_offset < 4:
                     break
-                sizeBytes = dataBytes[offset:offset+4]
-                offset += 4
+                sizeBytes = dataBytes[tmp_offset:tmp_offset+4]
+                tmp_offset += 4
                 chanSize = int.from_bytes(sizeBytes, byteorder='little')
 
-                if dataLen - offset < chanSize:
+                # channel name
+                if dataLen - tmp_offset < chanSize:
                     break
-                chanBytes = dataBytes[offset:offset+chanSize]
-                offset += chanSize
+                chanBytes = dataBytes[tmp_offset:tmp_offset+chanSize]
+                tmp_offset += chanSize
 
-                if dataLen - offset < 4:
+                # message size
+                if dataLen - tmp_offset < 4:
                     break
-                sizeBytes = dataBytes[offset:offset+4]
-                offset += 4
+                sizeBytes = dataBytes[tmp_offset:tmp_offset+4]
+                tmp_offset += 4
                 msgSize = int.from_bytes(sizeBytes, byteorder='little')
 
-                if dataLen - offset < msgSize:
+                # message
+                if dataLen - tmp_offset < msgSize:
                     break
-                msgBytes = dataBytes[offset:offset+msgSize]
-                offset += msgSize
+                msgBytes = dataBytes[tmp_offset:tmp_offset+msgSize]
+                tmp_offset += msgSize
 
                 channel_name = chanBytes.decode()
                 ret[channel_name] = msgBytes
+                offset = tmp_offset
 
         self._recv_carry_bytes = dataBytes[offset:]
         return ret
