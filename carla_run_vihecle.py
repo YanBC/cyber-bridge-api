@@ -1,6 +1,7 @@
 import argparse
 import time
 import sys
+import multiprocessing
 
 try:
     import pygame
@@ -22,6 +23,7 @@ from sensors.location_sensor import LocationSensor
 from sensors.chassis_sensor import ChassisSensor
 from sensors.trajectory_sensor import TrajectorySensor
 from sensors.base_sensor import SensorManager
+from sensors.apollo_control import listen_and_apply_control
 
 
 class KeyboardControl:
@@ -228,16 +230,16 @@ def main():
 
         apollo_host = args.apollo
         apollo_port = args.apollo_port
-        apollo_channel = args.channel
-        apollo_msgType = args.msgtype
-        ctrl_decoder = ApolloControlDecoder(
-                ControlCommand,
-                apollo_channel,
-                apollo_msgType)
-        cb_client = CyberBridgeClient(
-                apollo_host, apollo_port,
-                [], [ctrl_decoder])
-        cb_client.initialize()
+        # apollo_channel = args.channel
+        # apollo_msgType = args.msgtype
+        # ctrl_decoder = ApolloControlDecoder(
+        #         ControlCommand,
+        #         apollo_channel,
+        #         apollo_msgType)
+        # cb_client = CyberBridgeClient(
+        #         apollo_host, apollo_port,
+        #         [], [ctrl_decoder])
+        # cb_client.initialize()
 
         # TODO: setup sensors here
         location_sensor = LocationSensor(player)
@@ -246,6 +248,11 @@ def main():
         sensor_manager = SensorManager(
                 apollo_host, apollo_port,
                 [location_sensor, chassis_sensor, trajectory_sensor])
+
+        control_sensor = multiprocessing.Process(
+                            target=listen_and_apply_control,
+                            args=(args.adc, args.carla, args.carla_port, apollo_host, apollo_port))
+        control_sensor.start()
 
         while True:
             sim_world.tick()
@@ -264,16 +271,16 @@ def main():
                 world.render(display)
                 pygame.display.flip()
 
-            recv_list = cb_client.recv_pb_messages()
-            if len(recv_list) > 0:
-                apollo_control = ctrl_decoder.protobufToCarla(recv_list[-1])
-                apollo_control.manual_gear_shift = False
-            else:
-                print("No control message received, applying emergency stop")
-                apollo_control = emergency_stop()
-                # print("No control message received, applying previous control")
-                # apollo_control = player.get_control()
-            player.apply_control(apollo_control)
+            # recv_list = cb_client.recv_pb_messages()
+            # if len(recv_list) > 0:
+            #     apollo_control = ctrl_decoder.protobufToCarla(recv_list[-1])
+            #     apollo_control.manual_gear_shift = False
+            # else:
+            #     print("No control message received, applying emergency stop")
+            #     apollo_control = emergency_stop()
+            #     # print("No control message received, applying previous control")
+            #     # apollo_control = player.get_control()
+            # player.apply_control(apollo_control)
 
             sensor_manager.send_apollo_msgs()
 
