@@ -1,4 +1,3 @@
-import time
 import threading
 import weakref
 import signal
@@ -6,6 +5,23 @@ import carla
 from cyber_bridge_client import CyberBridgeClient
 from modules.control.proto.control_cmd_pb2 import ControlCommand
 from decoders.apollo_control_decoder import ApolloControlDecoder
+from utils import (
+    get_vehicle_by_role_name,
+    is_actor_exist
+)
+
+
+def emergency_stop():
+    control = carla.VehicleControl()
+    control.steer = 0.0
+    control.throttle = 0.0
+    control.brake = 1.0
+    control.hand_brake = False
+    return control
+
+
+def previous_control(ego):
+    return ego.get_control()
 
 
 class ApolloControl:
@@ -31,9 +47,17 @@ class ApolloControl:
     @staticmethod
     def background(weak_self):
         self = weak_self()
+        world = self.ego_vehicle.get_world()
+        actor_type = self.ego_vehicle.type_id
         while True:
+            if not is_actor_exist(world, actor_type=actor_type):
+                break
             pbCls_list = self.bridge.recv_pb_messages()
             if len(pbCls_list) == 0:
+                # no control signal received
+                # apply emergency stop
+                print(f"{__name__}: no control cmd received, applying mergency stop")
+                self.control = emergency_stop()
                 continue
             pbControl = pbCls_list[-1]
             self.control = self._decoder.protobufToCarla(pbControl)
@@ -42,7 +66,10 @@ class ApolloControl:
     def listen(weak_self):
         self = weak_self()
         world = self.ego_vehicle.get_world()
+        actor_type = self.ego_vehicle.type_id
         while True:
+            if not is_actor_exist(world, actor_type=actor_type):
+                break
             world.wait_for_tick()
             if self.control is not None:
                 self.ego_vehicle.apply_control(self.control)
@@ -59,16 +86,7 @@ def listen_and_apply_control(
     client.set_timeout(4.0)
     sim_world = client.get_world()
 
-    player = None
-    while player is None:
-        print("Waiting for the ego vehicle...")
-        time.sleep(1)
-        possible_vehicles = sim_world.get_actors().filter('vehicle.*')
-        for vehicle in possible_vehicles:
-            if vehicle.attributes['role_name'] == ego_name:
-                print("Ego vehicle found")
-                player = vehicle
-                break
+    player, _ = get_vehicle_by_role_name(__name__, sim_world, ego_name)
 
     sensor = ApolloControl(player, apollo_host, apollo_port)
 
@@ -84,4 +102,5 @@ def listen_and_apply_control(
     t1.start()
     t2.start()
 
-    signal.pause()
+    t1.join()
+    t2.join()

@@ -12,7 +12,7 @@ class LocationSensor(Sensor):
     def __init__(self, ego_vehicle: carla.Vehicle) -> None:
         super().__init__(ego_vehicle)
 
-    def update(self, time_stamp):
+    def update(self):
         transform = self.ego_vehicle.get_transform()
         linear_vel = self.ego_vehicle.get_velocity()
         angular_vel = self.ego_vehicle.get_angular_velocity()

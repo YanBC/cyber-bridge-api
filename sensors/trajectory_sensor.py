@@ -60,7 +60,7 @@ class TrajectorySensor(Sensor):
         initialposi = self.ego_vehicle.get_location()
         self.agent.set_destination(initialposi, destination)
 
-    def update(self, time_stamp):
+    def update(self):
         self.agent.update_information()
         incomming_waypoints = \
             self.agent._local_planner.waypoints_queue

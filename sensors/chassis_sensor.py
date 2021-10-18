@@ -12,7 +12,7 @@ class ChassisSensor(Sensor):
     def __init__(self, ego_vehicle: carla.Vehicle) -> None:
         super().__init__(ego_vehicle)
 
-    def update(self, time_stamp):
+    def update(self):
         v = self.ego_vehicle.get_velocity()
         mps = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
         control = self.ego_vehicle.get_control()

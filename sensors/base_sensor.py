@@ -26,7 +26,7 @@ class Sensor:
         self.ego_vehicle = ego_vehicle
         self._encoder = BaseEncoder(
             self._apollo_pbCls, self._apollo_channel, self._apollo_msgType)
-        self.ego_vehicle.get_world().on_tick(self.update)
+        # self.ego_vehicle.get_world().on_tick(self.update)
         self._pbCls = self._apollo_pbCls()
         self._updated = False
 
@@ -109,9 +109,9 @@ class SensorManager:
     def send_apollo_msgs(self) -> bool:
         msgList = []
         for s in self.sensors:
-            msg = b''
-            while len(msg) == 0:
-                msg = s.get_bytes()
+            msg = s.get_bytes()
+            if len(msg) == 0:
+                continue
             msgList.append(msg)
         ret = self.bridge.send_pb_messages(msgList)
         return ret
