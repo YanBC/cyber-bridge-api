@@ -21,7 +21,7 @@ class ChassisSensor(Sensor):
         self._pbCls.speed_mps = mps
         self._pbCls.throttle_percentage = control.throttle * 100.0
         self._pbCls.brake_percentage = control.brake * 100.0
-        self._pbCls.steering_percentage = -control.steer * 100.0
+        self._pbCls.steering_percentage = -1 * control.steer * 100.0
         self._pbCls.parking_brake = control.hand_brake
         self._pbCls.driving_mode = Chassis.DrivingMode.COMPLETE_AUTO_DRIVE
 

@@ -1,7 +1,8 @@
 import carla
 from sensors.location_sensor import LocationSensor
 from sensors.chassis_sensor import ChassisSensor
-from sensors.trajectory_sensor import TrajectorySensor
+from sensors.traffic_light_sensor import DummyTrafficLightSensor
+from sensors.obstacles_sensor import DummyObstacleSensor
 from sensors.base_sensor import SensorManager
 from utils import (
     get_vehicle_by_role_name,
@@ -23,16 +24,19 @@ def setup_sensors(
 
     location_sensor = LocationSensor(player)
     chassis_sensor = ChassisSensor(player)
-    trajectory_sensor = TrajectorySensor(player)
+    traffic_light_sensor = DummyTrafficLightSensor(player)
+    obstacles_sensor = DummyObstacleSensor(player)
     sensor_manager = SensorManager(
             apollo_host, apollo_port,
-            [location_sensor, chassis_sensor, trajectory_sensor])
+            [location_sensor, chassis_sensor, traffic_light_sensor,
+            obstacles_sensor])
 
     while True:
         if not is_actor_exist(sim_world, actor_type=player_type):
             break
         location_sensor.update()
         chassis_sensor.update()
-        trajectory_sensor.update()
+        traffic_light_sensor.update()
+        obstacles_sensor.update()
         sensor_manager.send_apollo_msgs()
         sim_world.wait_for_tick()

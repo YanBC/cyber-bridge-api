@@ -75,7 +75,7 @@ class TrajectorySensor(Sensor):
                         location.x,
                         -location.y,
                         location.z,
-                        math.radians(rotation.yaw),
+                        math.radians(-rotation.yaw),
                         0])
 
         x = [t[0] for t in tt]

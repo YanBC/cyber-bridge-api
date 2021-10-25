@@ -24,7 +24,7 @@ class ApolloControlEncoder(BaseEncoder):
         # convert info
         pbCtrl = ControlCommand()
         pbCtrl.throttle = throttle * 100
-        pbCtrl.steering_target = steer * 100
+        pbCtrl.steering_target = -1 * steer * 100
         pbCtrl.brake = brake * 100
         pbCtrl.parking_brake = hand_brake
         if reverse:

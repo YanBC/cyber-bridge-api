@@ -1,4 +1,5 @@
 import time
+import math
 import carla
 from typing import Tuple
 
@@ -40,3 +41,8 @@ def is_actor_exist(
             return False
     else:
         raise ValueError
+
+
+def cal_distance(a: carla.Location, b: carla.Location) -> float:
+    sqare = (a.x - b.x)^2 + (a.y - b.y)^2 + (a.z - b.z)^2
+    return math.sqrt(sqare)

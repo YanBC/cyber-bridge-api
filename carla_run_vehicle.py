@@ -4,7 +4,8 @@ import multiprocessing
 
 import carla
 from sensors.apollo_control import listen_and_apply_control
-from sensor_configs.test_apollo_control_module import setup_sensors
+# from sensor_configs.test_apollo_control_module import setup_sensors
+from sensor_configs.test_apollo_pnc_module import setup_sensors
 from pygame_viewer import view_game
 from utils import is_actor_exist
 
