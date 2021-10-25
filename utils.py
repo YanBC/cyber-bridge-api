@@ -1,7 +1,9 @@
 import time
 import math
+import json
 import carla
 from typing import Tuple
+from types import SimpleNamespace
 
 
 def get_vehicle_by_role_name(
@@ -46,3 +48,14 @@ def is_actor_exist(
 def cal_distance(a: carla.Location, b: carla.Location) -> float:
     sqare = (a.x - b.x)^2 + (a.y - b.y)^2 + (a.z - b.z)^2
     return math.sqrt(sqare)
+
+
+def load_json(filepath: str) -> dict:
+    with open(filepath) as f:
+        data = json.load(f)
+    return data
+
+
+def load_json_as_object(filepath: str) -> object:
+    data_dict = load_json(filepath)
+    return SimpleNamespace(**data_dict)

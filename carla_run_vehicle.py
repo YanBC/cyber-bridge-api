@@ -1,4 +1,5 @@
 import argparse
+from json import load
 import time
 import multiprocessing
 
@@ -7,12 +8,30 @@ from sensors.apollo_control import listen_and_apply_control
 # from sensor_configs.test_apollo_control_module import setup_sensors
 from sensor_configs.test_apollo_pnc_module import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist
+from utils import is_actor_exist, load_json_as_object
+from scenario_runner import ScenarioRunner
+
+
+def run_senario(args):
+    scenario_runner = None
+    result = True
+    try:
+        scenario_runner = ScenarioRunner(args)
+        result = scenario_runner.run()
+
+    finally:
+        if scenario_runner is not None:
+            scenario_runner.destroy()
+            del scenario_runner
+    return not result
 
 
 def get_args():
     argparser = argparse.ArgumentParser(
         description='CARLA Automatic Control Client')
+    argparser.add_argument(
+        'scenario',
+        help='specify senario config file path')
     argparser.add_argument(
         '--carla',
         default='127.0.0.1',
@@ -39,6 +58,11 @@ def get_args():
         '--show',
         action='store_true',
         help='display adc in pygame')
+    argparser.add_argument(
+        '--timeout',
+        type=float,
+        default=10.0,
+        help='Set the CARLA client timeout value in seconds')
     args = argparser.parse_args()
     return args
 
@@ -51,10 +75,26 @@ def main():
     carla_port = args.carla_port
     ego_role_name = args.adc
     show = args.show
+    carla_timeout = args.timeout
+
+    scenario_configs = load_json_as_object(args.scenario)
+    scenario_configs.host = carla_host
+    scenario_configs.port = carla_port
+    scenario_configs.timeout = str(carla_timeout)
+    scenario_configs.agent = None
+    scenario_configs.debug = None
+    scenario_configs.sync = None
+    scenario_configs.openscenario = None
+    scenario_configs.route = None
+    scenario_configs.waitForEgo = None
+    scenario_configs.randomize = None
+    scenario_configs.junit = None
+    scenario_configs.json = None
+    scenario_configs.file = None
 
     try:
         client = carla.Client(carla_host, carla_port)
-        client.set_timeout(4.0)
+        client.set_timeout(carla_timeout)
 
         sim_world = client.get_world()
         settings = sim_world.get_settings()
@@ -62,20 +102,28 @@ def main():
         settings.fixed_delta_seconds = 0.05
         sim_world.apply_settings(settings)
 
+        scenario_runner = multiprocessing.Process(
+                            target=run_senario,
+                            args=(scenario_configs,))
+        scenario_runner.start()
+        print("scenario_runner started")
+
+        # wait for scenario runner
         while not is_actor_exist(sim_world, role_name=ego_role_name):
             time.sleep(1)
 
-        # setup sensors here
         control_sensor = multiprocessing.Process(
                             target=listen_and_apply_control,
                             args=(ego_role_name, carla_host,
                             carla_port, apollo_host, apollo_port))
         control_sensor.start()
+        print("control_sensor started")
         sensors_config = multiprocessing.Process(
                             target=setup_sensors,
                             args=(ego_role_name, carla_host,
                             carla_port, apollo_host, apollo_port))
         sensors_config.start()
+        print("other sensors started")
 
         if show:
             viewer = multiprocessing.Process(

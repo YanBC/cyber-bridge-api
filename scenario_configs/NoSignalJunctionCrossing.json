@@ -1,0 +1,13 @@
+{
+    "scenario": "NoSignalJunctionCrossing",
+    "trafficManagerPort": "8000",
+    "trafficManagerSeed": "0",
+    "agentConfig": "",
+    "outputDir": "",
+    "configFile": "",
+    "additionalScenario": "",
+    "reloadWorld": true,
+    "output": true,
+    "record": "",
+    "repetitions": 1 
+}

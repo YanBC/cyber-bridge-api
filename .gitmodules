@@ -1,3 +1,0 @@
-[submodule "scenario_runner"]
-	path = scenario_runner
-	url = https://github.com/YanBC/scenario_runner.git
