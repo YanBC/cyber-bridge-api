@@ -1,6 +1,6 @@
 import threading
 import weakref
-import signal
+from multiprocessing import Event
 import carla
 from cyber_bridge_client import CyberBridgeClient
 from modules.control.proto.control_cmd_pb2 import ControlCommand
@@ -63,19 +63,24 @@ class ApolloControl:
             self.control = self._decoder.protobufToCarla(pbControl)
 
     @staticmethod
-    def listen(weak_self):
+    def listen(weak_self, ready_to_apply):
         self = weak_self()
         world = self.ego_vehicle.get_world()
         actor_type = self.ego_vehicle.type_id
         while True:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
+            if self.control is None:
+                continue
+
             world.wait_for_tick()
-            if self.control is not None:
-                self.ego_vehicle.apply_control(self.control)
+            ready_to_apply.wait()
+            self.ego_vehicle.apply_control(self.control)
+            ready_to_apply.clear()
 
 
 def listen_and_apply_control(
+                ready_to_apply: Event,
                 ego_name: str,
                 carla_host: str,
                 carla_port: int,
@@ -97,7 +102,7 @@ def listen_and_apply_control(
             daemon=False)
     t2 = threading.Thread(
         target=ApolloControl.listen,
-        args=(weak_self,),
+        args=(weak_self, ready_to_apply),
         daemon=False)
     t1.start()
     t2.start()

@@ -1,3 +1,4 @@
+from multiprocessing import Event
 import carla
 from sensors.location_sensor import LocationSensor
 from sensors.chassis_sensor import ChassisSensor
@@ -11,6 +12,7 @@ from utils import (
 
 
 def setup_sensors(
+                ready_to_apply: Event,
                 ego_name: str,
                 carla_host: str,
                 carla_port: int,
@@ -34,9 +36,21 @@ def setup_sensors(
     while True:
         if not is_actor_exist(sim_world, actor_type=player_type):
             break
-        location_sensor.update()
-        chassis_sensor.update()
-        traffic_light_sensor.update()
-        obstacles_sensor.update()
-        sensor_manager.send_apollo_msgs()
+
         sim_world.wait_for_tick()
+
+        while not location_sensor._updated:
+            location_sensor.update()
+        while not chassis_sensor._updated:
+            chassis_sensor.update()
+        while not traffic_light_sensor._updated:
+            traffic_light_sensor.update()
+        while not obstacles_sensor._updated:
+            obstacles_sensor.update()
+
+        sensor_manager.send_apollo_msgs()
+        location_sensor._updated = False
+        chassis_sensor._updated = False
+        traffic_light_sensor._updated = False
+        obstacles_sensor._updated = False
+        ready_to_apply.set()
