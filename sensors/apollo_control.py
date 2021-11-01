@@ -1,6 +1,6 @@
 import threading
 import weakref
-from multiprocessing import Event
+import multiprocessing
 import carla
 from cyber_bridge_client import CyberBridgeClient
 from modules.control.proto.control_cmd_pb2 import ControlCommand
@@ -9,7 +9,6 @@ from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
-
 
 def emergency_stop():
     control = carla.VehicleControl()
@@ -45,7 +44,10 @@ class ApolloControl:
         self.control = None
 
     @staticmethod
-    def background(weak_self):
+    def background(
+            weak_self,
+            sensors_ready: multiprocessing.Event,
+            control_ready: threading.Event):
         self = weak_self()
         world = self.ego_vehicle.get_world()
         actor_type = self.ego_vehicle.type_id
@@ -53,34 +55,44 @@ class ApolloControl:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
             pbCls_list = self.bridge.recv_pb_messages()
-            if len(pbCls_list) == 0:
-                # no control signal received
-                # apply emergency stop
-                print(f"{__name__}: no control cmd received, applying mergency stop")
-                self.control = emergency_stop()
-                continue
-            pbControl = pbCls_list[-1]
-            self.control = self._decoder.protobufToCarla(pbControl)
+
+            if sensors_ready.is_set():
+                if len(pbCls_list) == 0:
+                    # no control signal received
+                    # apply emergency stop
+                    print(f"{__name__}: no control cmd received, applying mergency stop")
+                    self.control = emergency_stop()
+                else:
+                    pbControl = pbCls_list[-1]
+                    self.control = self._decoder.protobufToCarla(pbControl)
+                sensors_ready.clear()
+                control_ready.set()
 
     @staticmethod
-    def listen(weak_self, ready_to_apply):
+    def listen(
+            weak_self,
+            control_ready: threading.Event,
+            ready_to_tick: multiprocessing.Event):
         self = weak_self()
         world = self.ego_vehicle.get_world()
         actor_type = self.ego_vehicle.type_id
+
         while True:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
             if self.control is None:
                 continue
 
-            world.wait_for_tick()
-            ready_to_apply.wait()
+            # world.wait_for_tick()
+            control_ready.wait()
             self.ego_vehicle.apply_control(self.control)
-            ready_to_apply.clear()
+            control_ready.clear()
+            ready_to_tick.set()
 
 
 def listen_and_apply_control(
-                ready_to_apply: Event,
+                sensors_ready: multiprocessing.Event,
+                ready_to_tick: multiprocessing.Event,
                 ego_name: str,
                 carla_host: str,
                 carla_port: int,
@@ -95,14 +107,15 @@ def listen_and_apply_control(
 
     sensor = ApolloControl(player, apollo_host, apollo_port)
 
+    control_ready = threading.Event()
     weak_self = weakref.ref(sensor)
     t1 = threading.Thread(
             target=ApolloControl.background,
-            args=(weak_self,),
+            args=(weak_self, sensors_ready, control_ready),
             daemon=False)
     t2 = threading.Thread(
         target=ApolloControl.listen,
-        args=(weak_self, ready_to_apply),
+        args=(weak_self, control_ready, ready_to_tick),
         daemon=False)
     t1.start()
     t2.start()

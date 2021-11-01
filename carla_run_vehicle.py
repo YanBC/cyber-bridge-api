@@ -2,6 +2,7 @@ import argparse
 from json import load
 import time
 import multiprocessing
+import pygame
 
 import carla
 from sensors.apollo_control import listen_and_apply_control
@@ -110,7 +111,7 @@ def main():
         sim_world = client.get_world()
         settings = sim_world.get_settings()
         settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.05
+        settings.fixed_delta_seconds = 0.01
         sim_world.apply_settings(settings)
 
         # wait for scenario runner
@@ -123,24 +124,35 @@ def main():
                     args=(ego_role_name, carla_host, carla_port))
             viewer.start()
 
-        conn_ = multiprocessing.Event()
+        sensor_ready = multiprocessing.Event()
+        ready_to_tick = multiprocessing.Event()
         control_sensor = multiprocessing.Process(
                             target=listen_and_apply_control,
-                            args=(conn_, ego_role_name, carla_host,
-                            carla_port, apollo_host, apollo_port))
+                            args=(sensor_ready, ready_to_tick,
+                                ego_role_name, carla_host,
+                                carla_port, apollo_host, apollo_port))
         control_sensor.start()
         print("control_sensor started")
         sensors_config = multiprocessing.Process(
                             target=setup_sensors,
-                            args=(conn_, ego_role_name, carla_host,
+                            args=(sensor_ready, ego_role_name, carla_host,
                             carla_port, apollo_host, apollo_port))
         sensors_config.start()
         print("other sensors started")
+
+        if not show:
+            clock = pygame.time.Clock()
 
         while True:
             if not is_actor_exist(sim_world, role_name=ego_role_name):
                 break
             sim_world.tick()
+            # set lower limit on simulator frame rate: 10 Hz
+            if ready_to_tick.wait(1/10):
+                ready_to_tick.clear()
+            if not show:
+                # set uppper limit on simulator frame rate: 30 Hz
+                clock.tick_busy_loop(30)
 
     finally:
         if sim_world is not None:
