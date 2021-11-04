@@ -16,7 +16,7 @@ class ApolloControlDecoder(BaseDecoder):
         carlaCtrl = VehicleControl()
         carlaCtrl.throttle = pbCtrl.throttle / 100
         # negative steer means right in Apollo
-        carlaCtrl.steer = pbCtrl.steering_target / 100
+        carlaCtrl.steer = -pbCtrl.steering_target / 100
         carlaCtrl.brake = pbCtrl.brake / 100
         carlaCtrl.hand_brake = pbCtrl.parking_brake
         carlaCtrl.reverse = pbCtrl.gear_location == Chassis.GearPosition.GEAR_REVERSE

@@ -56,17 +56,26 @@ class ApolloControl:
                 break
             pbCls_list = self.bridge.recv_pb_messages()
 
-            if sensors_ready.is_set():
-                if len(pbCls_list) == 0:
-                    # no control signal received
-                    # apply emergency stop
-                    print(f"{__name__}: no control cmd received, applying mergency stop")
-                    self.control = emergency_stop()
-                else:
-                    pbControl = pbCls_list[-1]
-                    self.control = self._decoder.protobufToCarla(pbControl)
-                sensors_ready.clear()
-                control_ready.set()
+            # if sensors_ready.is_set():
+            #     if len(pbCls_list) == 0:
+            #         # no control signal received
+            #         # apply emergency stop
+            #         print(f"{__name__}: no control cmd received, applying mergency stop")
+            #         self.control = emergency_stop()
+            #     else:
+            #         pbControl = pbCls_list[-1]
+            #         self.control = self._decoder.protobufToCarla(pbControl)
+            #     sensors_ready.clear()
+            #     control_ready.set()
+
+            if len(pbCls_list) == 0:
+                # no control signal received
+                # apply emergency stop
+                print(f"{__name__}: no control cmd received, applying mergency stop")
+                self.control = emergency_stop()
+            else:
+                pbControl = pbCls_list[-1]
+                self.control = self._decoder.protobufToCarla(pbControl)
 
     @staticmethod
     def listen(
@@ -83,11 +92,14 @@ class ApolloControl:
             if self.control is None:
                 continue
 
-            # world.wait_for_tick()
-            control_ready.wait()
+            # # world.wait_for_tick()
+            # control_ready.wait()
+            # self.ego_vehicle.apply_control(self.control)
+            # control_ready.clear()
+            # ready_to_tick.set()
+
+            world.wait_for_tick()
             self.ego_vehicle.apply_control(self.control)
-            control_ready.clear()
-            ready_to_tick.set()
 
 
 def listen_and_apply_control(

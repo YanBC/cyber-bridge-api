@@ -109,9 +109,13 @@ def main():
         # print("scenario_runner started")
 
         sim_world = client.get_world()
+        # settings = sim_world.get_settings()
+        # settings.synchronous_mode = True
+        # settings.fixed_delta_seconds = 0.02
+        # sim_world.apply_settings(settings)
         settings = sim_world.get_settings()
-        settings.synchronous_mode = True
-        settings.fixed_delta_seconds = 0.01
+        settings.synchronous_mode = False
+        settings.fixed_delta_seconds = None
         sim_world.apply_settings(settings)
 
         # wait for scenario runner
@@ -140,19 +144,20 @@ def main():
         sensors_config.start()
         print("other sensors started")
 
-        if not show:
-            clock = pygame.time.Clock()
+        # if not show:
+        #     clock = pygame.time.Clock()
 
         while True:
             if not is_actor_exist(sim_world, role_name=ego_role_name):
                 break
-            sim_world.tick()
-            # set lower limit on simulator frame rate: 10 Hz
-            if ready_to_tick.wait(1/10):
-                ready_to_tick.clear()
-            if not show:
-                # set uppper limit on simulator frame rate: 30 Hz
-                clock.tick_busy_loop(30)
+            # sim_world.tick()
+            # # set lower limit on simulator frame rate: 10 Hz
+            # if ready_to_tick.wait(1/10):
+            #     ready_to_tick.clear()
+            # if not show:
+            #     # set uppper limit on simulator frame rate: 30 Hz
+            #     clock.tick_busy_loop(30)
+            time.sleep(1)
 
     finally:
         if sim_world is not None:
