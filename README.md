@@ -33,3 +33,33 @@ python3 config.py --no-rendering
 ```
 
 See https://carla.readthedocs.io/en/0.9.11/adv_rendering_options/ for details.
+
+
+## Build docker image
+```bash
+docker build -t cyber-bridge-api:0.9.11 .
+```
+
+## Start docker container
+```bash
+docker run -it -d \
+-v /tmp/.X11-unix/:/tmp/.X11-unix \
+cyber-bridge-api:0.9.11 \
+bash
+```
+
+## Start Scenario
+```bash
+# clone this project inside your docker container
+git clone https://github.com/YanBC/cyber-bridge-api.git && \
+cd cyber-bridge-api
+
+# run NoSignalJunctionCrossing scenario
+python scenario_runner.py --host <caral_server_ip> --scenario NoSignalJunctionCrossing --output
+# or if you prefer, run FreeRide_3 scenario
+# python scenario_runner.py --host <caral_server_ip> --scenario FreeRide_3 --output
+
+# run simulator client
+# note that in order to see any graphics, you have to set the DISPLAY env variable
+python carla_run_vehicle.py --carla <caral_server_ip> --apollo <apollo_container_ip> --show
+```

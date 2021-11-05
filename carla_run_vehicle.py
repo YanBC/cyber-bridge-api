@@ -30,9 +30,9 @@ def run_senario(args):
 def get_args():
     argparser = argparse.ArgumentParser(
         description='CARLA Automatic Control Client')
-    argparser.add_argument(
-        'scenario',
-        help='specify senario config file path')
+    # argparser.add_argument(
+    #     'scenario',
+    #     help='specify senario config file path')
     argparser.add_argument(
         '--carla',
         default='127.0.0.1',
@@ -78,20 +78,20 @@ def main():
     show = args.show
     carla_timeout = args.timeout
 
-    scenario_configs = load_json_as_object(args.scenario)
-    scenario_configs.host = carla_host
-    scenario_configs.port = carla_port
-    scenario_configs.timeout = str(carla_timeout)
-    scenario_configs.agent = None
-    scenario_configs.debug = None
-    scenario_configs.sync = None
-    scenario_configs.openscenario = None
-    scenario_configs.route = None
-    scenario_configs.waitForEgo = None
-    scenario_configs.randomize = None
-    scenario_configs.junit = None
-    scenario_configs.json = None
-    scenario_configs.file = None
+    # scenario_configs = load_json_as_object(args.scenario)
+    # scenario_configs.host = carla_host
+    # scenario_configs.port = carla_port
+    # scenario_configs.timeout = str(carla_timeout)
+    # scenario_configs.agent = None
+    # scenario_configs.debug = None
+    # scenario_configs.sync = None
+    # scenario_configs.openscenario = None
+    # scenario_configs.route = None
+    # scenario_configs.waitForEgo = None
+    # scenario_configs.randomize = None
+    # scenario_configs.junit = None
+    # scenario_configs.json = None
+    # scenario_configs.file = None
 
     sim_world = None
     try:
