@@ -17,6 +17,7 @@ from utils import (
     is_actor_exist
 )
 
+from manual_control import KeyboardControl as MC_KeyboardControl
 
 class KeyboardControl:
     def parse_events(self):
@@ -254,12 +255,13 @@ def view_game(
     hud = HUD(screen_width, screen_height)
     world = WorldSR(client.get_world(), hud, ego_name, player)
     clock = pygame.time.Clock() # for client fps
-    controller = KeyboardControl()
+    # controller = KeyboardControl()
+    controller = MC_KeyboardControl(world, False)
 
     try:
         while True:
             sim_world.wait_for_tick()
-            if controller.parse_events():
+            if controller.parse_events(client, world, clock):
                 break
 
             if not is_actor_exist(sim_world, actor_type=player_type):
