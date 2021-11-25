@@ -24,8 +24,8 @@ from utils import (
 def test_location(world, ego_vehicle, gnss_sensor):
     ego_location = ego_vehicle.get_transform().location
     gnss_location = gnss_sensor.transform.location
-    print("vehicle location x=%f, y=%f, z=%f" % (ego_location.x, 
-                                                 ego_location.y, 
+    print("vehicle location x=%f, y=%f, z=%f" % (ego_location.x,
+                                                 ego_location.y,
                                                  ego_location.z))
 
     print("gnss location x=%f, y=%f, z=%f" % (gnss_location.x, gnss_location.y, gnss_location.z))
@@ -33,7 +33,7 @@ def test_location(world, ego_vehicle, gnss_sensor):
     gnss_transform_geolocation = world.get_map().transform_to_geolocation(carla.Location(gnss_location.x,
                                                                             -gnss_location.y,
                                                                             gnss_location.z))
-    print("geolocation x=%f, y=%f, z=%f" % (gnss_transform_geolocation.latitude, gnss_transform_geolocation.longitude , gnss_transform_geolocation.altitude ))                                                                    
+    print("geolocation x=%f, y=%f, z=%f" % (gnss_transform_geolocation.latitude, gnss_transform_geolocation.longitude , gnss_transform_geolocation.altitude ))
     print("gnss ouput lat=%f, lon=%f, alt=%f" % (gnss_sensor.lat, gnss_sensor.lon, gnss_sensor.alt))
 
 def setup_sensors(
@@ -42,16 +42,18 @@ def setup_sensors(
                 carla_host: str,
                 carla_port: int,
                 apollo_host: str,
-                apollo_port: int):
+                apollo_port: int,
+                x_offset: float = 0.,
+                y_offset: float = 0):
 
     def _prompt_config_info(vehicle, gnss_sensor:GnssSensor):
         vehicle_transform = vehicle.get_transform()
-        gnss_sensor_transform = gnss_sensor.transform        
-        print("vehicle center location x=%f, y=%f, z=%f" % (vehicle_transform.location.x, 
-                                                            vehicle_transform.location.y, 
+        gnss_sensor_transform = gnss_sensor.transform
+        print("vehicle center location x=%f, y=%f, z=%f" % (vehicle_transform.location.x,
+                                                            vehicle_transform.location.y,
                                                             vehicle_transform.location.z))
-        print("gnss location x=%f, y=%f, z=%f" % (gnss_sensor_transform.location.x, 
-                                                  gnss_sensor_transform.location.y, 
+        print("gnss location x=%f, y=%f, z=%f" % (gnss_sensor_transform.location.x,
+                                                  gnss_sensor_transform.location.y,
                                                   gnss_sensor_transform.location.z))
 
     client = carla.Client(carla_host, carla_port)
@@ -68,18 +70,18 @@ def setup_sensors(
 
     corrected_imu = CorrectedImu(player, imu_sensor)
     ins_stat = InsStatus(player)
-    odometry = Odometry(player, gnss_sensor)
+    odometry = Odometry(player, gnss_sensor, x_offset, y_offset)
     chassis = ChassisAlter(player, gnss_sensor)
     best_pose = BestPose(player, gnss_sensor)
     traffic_light = TrafficLightAlter(player, sim_world)
     obstacles = Obstacles(player, sim_world)
-    
+
     sensor_manager = SensorManager(
             apollo_host, apollo_port,
             #  [location_sensor, chassis_sensor, traffic_light_sensor,  obstacles_sensor])
             [chassis, traffic_light,
-            obstacles, corrected_imu, ins_stat, odometry, best_pose])  
-             
+            obstacles, corrected_imu, ins_stat, odometry, best_pose])
+
     _prompt_config_info(player, gnss_sensor)
 
     while True:

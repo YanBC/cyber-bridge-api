@@ -68,6 +68,7 @@ def get_args():
         help='Set the CARLA client timeout value in seconds')
     args = argparser.parse_args()
     return args
+
 def _load_world_from_opendrive(xodr_path, client):
     if os.path.exists(xodr_path):
         with open(xodr_path, encoding='utf-8') as od_file:
@@ -89,36 +90,42 @@ def _load_world_from_opendrive(xodr_path, client):
                 additional_width=extra_width,
                 smooth_junctions=True,
                 enable_mesh_visibility=True))
-
         return world
     else:
         print('file not found.')
         return None
 
 def create_ego_vehicle(client):
-    world = client.load_world('Town01')
-    # world = _load_world_from_opendrive('./CubeTown.xodr', client)
-    # world = _load_world_from_opendrive('./map_conv.xodr', client)
+    # world = client.load_world('Town03')
+    world = _load_world_from_opendrive('./opendrive/CubeTown.xodr', client)
     blueprint_library = world.get_blueprint_library()
     settings = world.get_settings()
     settings.synchronous_mode = False
     settings.fixed_delta_seconds = 0.02
     world.apply_settings(settings)
-    # spawn_point = carla.Transform(carla.Location(x=-74.32, y=-50, z=0.5), carla.Rotation(yaw=270))
     all_default_spawn = world.get_map().get_spawn_points()
     spawn_point = random.choice(all_default_spawn) if all_default_spawn else carla.Transform()
+
+    # spawn_location = carla.Location()
+    # spawn_location.x = 58.0
+    # spawn_location.y = 41.2
+    # spawn_location.z = 3
+    # spawn_point = world.get_map().get_waypoint(spawn_location).transform
+    # actors = world.get_actors()
+    # locations = [a.get_transform().location for a in actors]
+    # actor_distances = [(a.x-spawn_location.x)**2 + (a.y-spawn_location.y)**2 + (a.z-spawn_location.z)**2 for a in locations]
+
     ego_vehicle_bp = blueprint_library.find('vehicle.lincoln.mkz2017')
     ego_vehicle_bp.set_attribute('role_name', 'hero')
-    world.spawn_actor(ego_vehicle_bp, spawn_point) 
-    # world.tick()
+    world.spawn_actor(ego_vehicle_bp, spawn_point)
     return world
 
-def destroy(self):
-        sensor_list = self._world.get_actors().filter("*sensor*")
-        """Destroys all actors"""        
-        for actor in sensor_list:
-            if actor is not None:
-                actor.destroy()
+def destroy_all_sensors(world):
+    sensor_list = world.get_actors().filter("*sensor*")
+    """Destroys all actors"""
+    for actor in sensor_list:
+        if actor is not None:
+            actor.destroy()
 
 def main():
     args = get_args()
@@ -159,9 +166,9 @@ def main():
         # for now, let's just wait
         # time.sleep(5)
         # print("scenario_runner started")
-        # sim_world = create_ego_vehicle(client)  # Call to create ego vehicle if scenario_runner.py not run
-        
-        sim_world = client.get_world()
+        sim_world = create_ego_vehicle(client)  # Call to create ego vehicle if scenario_runner.py not run
+
+        # sim_world = client.get_world()
         # sim_world = client.load_world('Town01')
         settings = sim_world.get_settings()
         settings.synchronous_mode = False
@@ -195,7 +202,8 @@ def main():
         sensors_config = multiprocessing.Process(
                             target=setup_sensors,
                             args=(sensor_ready, ego_role_name, carla_host,
-                            carla_port, apollo_host, apollo_port))
+                            carla_port, apollo_host, apollo_port,
+                            592720.0, 4134479.0))
         sensors_config.start()
         print("other sensors started")
 
@@ -211,7 +219,7 @@ def main():
             #     ready_to_tick.clear()
             # if not show:
             #     # set uppper limit on simulator frame rate: 30 Hz
-            #     clock.tick_busy_loop(30)            
+            #     clock.tick_busy_loop(30)
             time.sleep(1)
 
     finally:
@@ -221,7 +229,8 @@ def main():
             settings.fixed_delta_seconds = None
             sim_world.apply_settings(settings)
 
-            destroy()
+            destroy_all_sensors(sim_world)
+
 
 if __name__ == '__main__':
     main()

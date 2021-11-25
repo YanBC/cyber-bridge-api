@@ -17,6 +17,10 @@ bash compile_proto.sh
 - AuroAI has converted all carla maps to Apollo maps format, [see here](https://auro.ai/blog/2020/03/using-open-source-frameworks-in-autonomous-vehicle-development-part-2/)
 
 
+## About lgsvl Maps
+https://github.com/lgsvl/simulator/issues/1416
+
+
 ## Disable carla server rendering for higher fps
 ```bash
 # in carla/PythonAPI/util

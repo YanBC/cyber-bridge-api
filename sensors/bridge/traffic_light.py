@@ -68,7 +68,7 @@ class TrafficLightAlter(Sensor):
             # _test_print_tlg(traffic_light)
             rtl = TrafficLight()
             rtl.color = _carla_traffic_light_to_pb(traffic_light)
-            rtl.id = tl_lm.id
+            rtl.id = tl_lm.name
             rtl.confidence = 1.0
             rtl.blink = False
             self._pbCls.traffic_light.append(rtl)

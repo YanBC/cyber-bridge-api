@@ -72,10 +72,10 @@ class ApolloControl:
             if len(pbCls_list) == 0:
                 # no control signal received
                 # apply emergency stop
-                now_time = datetime.now()
+                # now_time = datetime.now()
                 # print(f"{__name__}[{now_time}]: no control cmd received, applying mergency stop")
-                # self.control = emergency_stop()
-                self.control = None
+                self.control = emergency_stop()
+                # self.control = None
             else:
                 pbControl = pbCls_list[-1]
                 self.control = self._decoder.protobufToCarla(pbControl)
