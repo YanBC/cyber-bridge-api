@@ -1,9 +1,9 @@
 import threading
 import weakref
 import carla
-from cyber_bridge_client import CyberBridgeClient
+from cyber_bridge.cyber_bridge_client import CyberBridgeClient
+from cyber_bridge.apollo_control_decoder import ApolloControlDecoder
 from modules.control.proto.control_cmd_pb2 import ControlCommand
-from decoders.apollo_control_decoder import ApolloControlDecoder
 from utils import (
     get_vehicle_by_role_name,
     is_actor_exist

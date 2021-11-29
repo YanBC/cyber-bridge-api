@@ -4,9 +4,9 @@ from typing import List
 from google.protobuf.message import Message as pbMessage
 
 import carla
-from cyber_bridge_client import CyberBridgeClient
+from cyber_bridge.cyber_bridge_client import CyberBridgeClient
+from cyber_bridge.base_encoder import BaseEncoder
 from modules.common.proto.header_pb2 import Header
-from encoders.base_encoder import BaseEncoder
 
 
 class Sensor:

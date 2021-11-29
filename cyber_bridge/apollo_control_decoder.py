@@ -1,7 +1,7 @@
 from carla import VehicleControl
 from google.protobuf.message import Message
 
-from decoders.base_decoder import BaseDecoder
+from cyber_bridge.base_decoder import BaseDecoder
 
 from modules.control.proto.control_cmd_pb2 import ControlCommand
 from modules.canbus.proto.chassis_pb2 import Chassis

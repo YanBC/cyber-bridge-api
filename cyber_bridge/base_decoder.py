@@ -1,4 +1,4 @@
-from cyber_bridge_client import (
+from cyber_bridge.cyber_bridge_client import (
     op_add_reader
 )
 
