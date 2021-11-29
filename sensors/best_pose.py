@@ -1,9 +1,9 @@
-import math
 import carla
 import time
 from sensors.base_sensor import Sensor
 from modules.drivers.gnss.proto.gnss_best_pose_pb2 import GnssBestPose, NARROW_INT, WGS84
-from sensors.bridge.carla_sensors import GnssSensor
+from sensors.carla_sensors import GnssSensor
+
 
 class BestPose(Sensor):
     _apollo_channel = '/apollo/sensor/gnss/best_pose'
@@ -15,7 +15,7 @@ class BestPose(Sensor):
         self._gnss_sensor = gnss_sensor
         self._begining_time = time.time()
 
-    def update(self):        
+    def update(self):
         self._pbCls.measurement_time = self._gnss_sensor.timestamp + self._begining_time
         self._pbCls.sol_type = NARROW_INT
         self._pbCls.latitude = self._gnss_sensor.lat

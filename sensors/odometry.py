@@ -2,7 +2,7 @@ import math
 import carla
 import transforms3d
 from sensors.base_sensor import Sensor
-from sensors.bridge.carla_sensors import GnssSensor
+from sensors.carla_sensors import GnssSensor
 from modules.localization.proto.gps_pb2 import Gps
 # from modules.localization.proto.pose_pb2 import Pose
 

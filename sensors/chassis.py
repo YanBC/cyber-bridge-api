@@ -3,7 +3,8 @@ import carla
 import datetime
 from sensors.base_sensor import Sensor
 from modules.canbus.proto.chassis_pb2 import FIX_3D, Chassis
-from sensors.bridge.carla_sensors import GnssSensor
+from sensors.carla_sensors import GnssSensor
+
 
 class ChassisAlter(Sensor):
     _apollo_channel = '/apollo/canbus/chassis'

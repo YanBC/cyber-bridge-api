@@ -12,12 +12,12 @@ import carla
 from examples.manual_control import (
                 World, CameraManager, FadingText, HelpText,
                 find_weather_presets, get_actor_display_name)
+from examples.manual_control import KeyboardControl as MC_KeyboardControl
 from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
 
-from manual_control import KeyboardControl as MC_KeyboardControl
 
 class KeyboardControl:
     def parse_events(self):

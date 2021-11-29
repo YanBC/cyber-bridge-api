@@ -2,15 +2,15 @@ import math
 import carla
 from sensors.base_sensor import Sensor
 from modules.localization.proto.imu_pb2 import CorrectedImu
-# from modules.localization.proto.pose_pb2 import Pose
-from sensors.bridge.carla_sensors import IMUSensor
+from sensors.carla_sensors import IMUSensor
+
 
 class CorrectedImu(Sensor):
     """
         Carla(UE) X -- East, Y -- South, Z -- Up
         Position of the vehicle reference point (VRP) in the map reference frame.
         The VRP is the center of rear axle. apollo.common.PointENU position
-        
+
     """
     _apollo_channel = '/apollo/sensor/gnss/corrected_imu'
     _apollo_msgType = 'apollo.localization.CorrectedImu'
@@ -19,11 +19,11 @@ class CorrectedImu(Sensor):
 
     def __init__(self, ego_vehicle: carla.Vehicle, imu_sensor: IMUSensor) -> None:
         super().__init__(ego_vehicle)
-        self._imu_sensor = imu_sensor        
+        self._imu_sensor = imu_sensor
 
     def update(self):
         transform = self.ego_vehicle.get_transform()
-       
+
         self._pbCls.imu.linear_acceleration.x = self._imu_sensor.accelerometer[0]
         self._pbCls.imu.linear_acceleration.y = -self._imu_sensor.accelerometer[1]
         self._pbCls.imu.linear_acceleration.z = self._imu_sensor.accelerometer[2]

@@ -1,6 +1,7 @@
 import carla
 from sensors.location_sensor import LocationSensor
-from sensors.chassis_sensor import ChassisSensor
+from sensors.carla_sensors import GnssSensor
+from sensors.chassis import ChassisAlter
 from sensors.trajectory_sensor import TrajectorySensor
 from sensors.base_sensor import SensorManager
 from utils import (
@@ -20,9 +21,10 @@ def setup_sensors(
     sim_world = client.get_world()
 
     player, player_type = get_vehicle_by_role_name(__name__, sim_world, ego_name)
+    gnss_sensor = GnssSensor(player)
 
     location_sensor = LocationSensor(player)
-    chassis_sensor = ChassisSensor(player)
+    chassis_sensor = ChassisAlter(player, gnss_sensor)
     trajectory_sensor = TrajectorySensor(player)
     sensor_manager = SensorManager(
             apollo_host, apollo_port,

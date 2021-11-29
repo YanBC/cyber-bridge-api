@@ -1,5 +1,4 @@
 import carla
-from time import time
 import math
 from sensors.base_sensor import Sensor
 from modules.perception.proto.perception_obstacle_pb2 import PerceptionObstacles, PerceptionObstacle
@@ -25,13 +24,11 @@ class Obstacles(Sensor):
                 type = PerceptionObstacle.Type.VEHICLE
             elif semantic_tag == 20:
                 type = PerceptionObstacle.Type.UNKNOWN_MOVABLE
-
             return type
 
         def _is_valid_obstacle(semantic_tag):
             if semantic_tag == 4 or semantic_tag == 10:
                 return True
-            
             return False
 
         self._pbCls = self._apollo_pbCls()
@@ -66,7 +63,7 @@ class Obstacles(Sensor):
             perception_obstacle.height = actor.bounding_box.extent.z * 2
 
             perception_obstacle.type = _get_actor_type(actor.semantic_tags[0])
-            
+
             perception_obstacle.acceleration.x = actor.get_acceleration().x
             perception_obstacle.acceleration.y = -actor.get_acceleration().y
             perception_obstacle.acceleration.z = actor.get_acceleration().z
