@@ -1,6 +1,22 @@
-## Compile protos
+# Overview
+File tree:
 ```bash
-bash compile_proto.sh
+.
+├── carla_run_vehicle.py        # main script
+├── compile_proto.sh            # script for compiling proto files
+├── cyber                       # proto files from Apollo Autopilot
+├── cyber_bridge                # codes for communicating with Apollo cyber_bridge
+├── Dockerfile                  # Dockerfile
+├── modules                     # proto files from Apollo Autopilot
+├── opendrive                   # opendrive maps
+├── pygame_viewer.py            # pygame viewer sub-process
+├── README.md                   # this README.md
+├── requirements.txt            # required python packages
+├── scenario_configs            # scenario configurations, unused for now
+├── scenario_runner.py          # scenario_runner.py from scenario runner project
+├── sensor_configs              # sensors configurations
+├── sensors                     # codes for Carla sensors
+└── utils.py                    # common utilities codes
 ```
 
 
@@ -10,6 +26,15 @@ bash compile_proto.sh
 3. <del>project docker image (Dockerfile)</del>
 4. apollo opendrive map converter (*.xodr -> apollo_map)
 5. communication between scenario_runner and main process
+6. different frequency for different sensors
+
+
+
+
+## Compile protos
+```bash
+bash compile_proto.sh
+```
 
 
 ## About Apollo Map
