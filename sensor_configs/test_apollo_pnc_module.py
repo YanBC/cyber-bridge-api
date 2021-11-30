@@ -8,6 +8,7 @@ from sensors.chassis import ChassisAlter
 from sensors.best_pose import BestPose
 from sensors.traffic_light import TrafficLightAlter
 from sensors.obstacles import Obstacles
+from sensors.clock_sensor import ClockSensor
 
 from utils import (
     get_vehicle_by_role_name,
@@ -38,10 +39,11 @@ def setup_sensors(
     best_pose = BestPose(player, gnss_sensor)
     traffic_light = TrafficLightAlter(player, sim_world)
     obstacles = Obstacles(player, sim_world)
+    clock = ClockSensor(player)
 
     sensor_manager = SensorManager(
             apollo_host, apollo_port,
-            [chassis, traffic_light,
+            [chassis, traffic_light, clock,
             obstacles, corrected_imu, ins_stat, odometry, best_pose])
 
     while True:
@@ -64,6 +66,8 @@ def setup_sensors(
             traffic_light.update()
         while not obstacles._updated:
             obstacles.update()
+        while not clock._updated:
+            clock.update()
 
         sensor_manager.send_apollo_msgs()
 
@@ -74,3 +78,4 @@ def setup_sensors(
         best_pose._updated = False
         traffic_light._updated = False
         obstacles._updated = False
+        clock._updated = False
