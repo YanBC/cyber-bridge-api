@@ -1,10 +1,8 @@
 import time
 import weakref
-from typing import List
 from google.protobuf.message import Message as pbMessage
 
 import carla
-from cyber_bridge.cyber_bridge_client import CyberBridgeClient
 from cyber_bridge.base_encoder import BaseEncoder
 from modules.common.proto.header_pb2 import Header
 
@@ -26,13 +24,16 @@ class Sensor:
         self.ego_vehicle = ego_vehicle
         self._encoder = BaseEncoder(
             self._apollo_pbCls, self._apollo_channel, self._apollo_msgType)
-        # self.ego_vehicle.get_world().on_tick(self.update)
         self._pbCls = self._apollo_pbCls()
         self._updated = False
 
+    def isUpdated(self):
+        return self._updated
+
+    def unsetUpdated(self):
+        self._updated = False
+
     def update(self, time_stamp):
-        '''this method is invoked on every server tick
-        '''
         self._updated = True
         raise NotImplementedError
 
@@ -95,23 +96,3 @@ class CarlaSensor(Sensor):
 
     def _get_pbCls(self) -> pbMessage:
         raise NotImplementedError
-
-
-class SensorManager:
-    def __init__(
-            self, host:str, port:int,
-            sensors:List[Sensor]) -> None:
-        self.bridge = CyberBridgeClient(
-                host, port, [s._encoder for s in sensors], [])
-        self.bridge.initialize()
-        self.sensors = sensors
-
-    def send_apollo_msgs(self) -> bool:
-        msgList = []
-        for s in self.sensors:
-            msg = s.get_bytes()
-            if len(msg) == 0:
-                continue
-            msgList.append(msg)
-        ret = self.bridge.send_pb_messages(msgList)
-        return ret
