@@ -2,6 +2,7 @@ import carla
 import math
 from sensors.base_sensor import Sensor
 from modules.perception.proto.perception_obstacle_pb2 import PerceptionObstacles, PerceptionObstacle
+from utils import get_actor_shape
 
 
 class Obstacles(Sensor):
@@ -9,11 +10,20 @@ class Obstacles(Sensor):
     _apollo_msgType = 'apollo.perception.PerceptionObstacles'
     _apollo_pbCls = PerceptionObstacles
 
-    def __init__(self, ego_vehicle: carla.Vehicle, world: carla.World, vehicle_dis = 50, walker_dis = 15) -> None:
+    def __init__(
+            self,
+            ego_vehicle: carla.Vehicle,
+            world: carla.World,
+            x_offset: float = 0.,
+            y_offset: float = 0.,
+            vehicle_dis = 50,
+            walker_dis = 15) -> None:
         super().__init__(ego_vehicle)
         self._world = world
         self._vehicle_range = vehicle_dis
         self._walker_range = walker_dis
+        self.x_offset = x_offset
+        self.y_offset = y_offset
 
     def update(self):
         def _get_actor_type(semantic_tag):
@@ -42,7 +52,7 @@ class Obstacles(Sensor):
         for actor in vehicle_list:
             if actor.get_transform().location.distance(ego_vehicle_location) <= self._vehicle_range \
                 and actor.id != self.ego_vehicle.id:
-                        obstacles_potencial.append(actor)
+                    obstacles_potencial.append(actor)
 
         for actor in walker_list:
             if actor.get_transform().location.distance(ego_vehicle_location) <= self._walker_range:
@@ -51,16 +61,23 @@ class Obstacles(Sensor):
         perception_obstacle = PerceptionObstacle()
         for actor in obstacles_potencial:
             perception_obstacle.id = actor.id
-            perception_obstacle.position.x = actor.get_location().x
-            perception_obstacle.position.y = -actor.get_location().y
-            perception_obstacle.position.z = actor.get_location().z
-            perception_obstacle.theta = math.radians(-self.ego_vehicle.get_transform().rotation.yaw - 90)
-            perception_obstacle.velocity.x = actor.get_velocity().x
-            perception_obstacle.velocity.y = -actor.get_velocity().y
-            perception_obstacle.velocity.z = actor.get_velocity().z
-            perception_obstacle.length = actor.bounding_box.extent.x * 2
-            perception_obstacle.width = actor.bounding_box.extent.y * 2
-            perception_obstacle.height = actor.bounding_box.extent.z * 2
+
+            location = actor.get_location()
+            perception_obstacle.position.x = location.x + self.x_offset
+            perception_obstacle.position.y = -1 * location.y + self.y_offset
+            perception_obstacle.position.z = location.z
+
+            perception_obstacle.theta = -math.radians(actor.get_transform().rotation.yaw)
+
+            velocity = actor.get_velocity()
+            perception_obstacle.velocity.x = velocity.x
+            perception_obstacle.velocity.y = -1 * velocity.y
+            perception_obstacle.velocity.z = velocity.z
+
+            length, width, height = get_actor_shape(actor)
+            perception_obstacle.length = length
+            perception_obstacle.width = width
+            perception_obstacle.height = height
 
             perception_obstacle.type = _get_actor_type(actor.semantic_tags[0])
 

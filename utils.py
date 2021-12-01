@@ -59,3 +59,17 @@ def load_json(filepath: str) -> dict:
 def load_json_as_object(filepath: str) -> object:
     data_dict = load_json(filepath)
     return SimpleNamespace(**data_dict)
+
+
+# Available on carla.Vehicle, carla.Walker
+# # carla.EnvironmentObject and carla.Junction
+# Returns (length,, width, height)
+def get_actor_shape(a: carla.Actor) -> Tuple[float]:
+    bbox = a.bounding_box
+    vertices = bbox.get_local_vertices()
+    v_min = vertices[0]
+    v_max = vertices[7]
+    length = v_max.x - v_min.x
+    width = v_max.y - v_min.y
+    height = v_max.z = v_min.z
+    return (length, width, height)
