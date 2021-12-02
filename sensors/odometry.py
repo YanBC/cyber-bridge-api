@@ -1,5 +1,6 @@
 import math
 import carla
+import logging
 import transforms3d
 from sensors.base_sensor import Sensor
 from sensors.carla_sensors import GnssSensor
@@ -69,7 +70,7 @@ def get_Odometry(
         x_offset = config['x_offset']
         y_offset = config['y_offset']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     gnss_sensor = get_GnssSensor(ego_vehicle)
     return Odometry(

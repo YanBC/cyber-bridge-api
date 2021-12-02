@@ -1,5 +1,5 @@
-import math
-from time import time,time_ns
+from time import time_ns
+import logging
 import carla
 from sensors.base_sensor import Sensor
 from modules.perception.proto.traffic_light_detection_pb2 import TrafficLightDetection, TrafficLight
@@ -25,7 +25,7 @@ def _retrieve_traffic_landmark(
                 elif len(traffic_light_landmarks) > 0 and landmark.id != traffic_light_landmarks[-1].id:
                     traffic_light_landmarks.append(landmark)
     else:
-        print('Generate ego vehicle waypoint failed!')
+        logging.warning('Generate ego vehicle waypoint failed!')
     return traffic_light_landmarks
 
 
@@ -93,7 +93,7 @@ def get_TrafficLightAlter(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     return TrafficLightAlter(
         ego_vehicle, freq, name)

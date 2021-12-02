@@ -1,5 +1,6 @@
 import math
 import carla
+import logging
 from sensors.base_sensor import Sensor
 from modules.localization.proto.imu_pb2 import CorrectedImu
 from sensors.carla_sensors import IMUSensor, get_IMUSensor
@@ -55,7 +56,7 @@ def get_CorrectedImu(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     imu_sensor = get_IMUSensor(ego_vehicle)
     return CorrectedImu(

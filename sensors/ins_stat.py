@@ -1,4 +1,5 @@
 import carla
+import logging
 from sensors.base_sensor import Sensor
 from modules.drivers.gnss.proto.ins_pb2 import InsStat
 
@@ -38,7 +39,7 @@ def get_InsStatus(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     return InsStatus(
         ego_vehicle, freq, name)

@@ -5,6 +5,8 @@ import multiprocessing
 import random
 import os
 import sys
+import functools
+import logging
 
 import carla
 from sensors.apollo_control import listen_and_apply_control
@@ -68,6 +70,10 @@ def get_args():
         type=float,
         default=20.0,
         help='Set the CARLA client timeout value in seconds')
+    argparser.add_argument(
+        '--log-dir',
+        default="./logs",
+        help='where to store log files')
     args = argparser.parse_args()
     return args
 
@@ -168,6 +174,38 @@ def destroy_all_sensors(world):
             actor.destroy()
 
 
+def logging_wrapper(func):
+    @functools.wraps(func)
+    def wrapper(log_dir:str, name:str, *args, **kwargs):
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
+        if os.path.isfile(logfilepath):
+            os.remove(logfilepath)
+        logging.basicConfig(
+                filename=logfilepath,
+                level=logging.DEBUG,
+                format='%(asctime)s %(message)s')
+        func(*args, **kwargs)
+    return wrapper
+
+
+@logging_wrapper
+def run_pygame(*args, **kwargs):
+    return view_game(*args, **kwargs)
+
+
+@logging_wrapper
+def run_control(*args, **kwargs):
+    return listen_and_apply_control(*args, **kwargs)
+
+
+@logging_wrapper
+def run_sensors(*args, **kwargs):
+    return setup_sensors(*args, **kwargs)
+
+
 def main():
     args = get_args()
     apollo_host = args.apollo
@@ -178,6 +216,7 @@ def main():
     show = args.show
     carla_timeout = args.timeout
     sensor_config = load_json(args.sensor_config)
+    log_dir = args.log_dir
 
     # scenario_configs = load_json_as_object(args.scenario)
     # scenario_configs.host = carla_host
@@ -225,21 +264,23 @@ def main():
 
         if show:
             viewer = multiprocessing.Process(
-                    target=view_game,
-                    args=(ego_role_name, carla_host, carla_port, 720, 480))
+                    target=run_pygame,
+                    args=(log_dir, "view_game" ,ego_role_name, carla_host, carla_port, 720, 480))
             viewer.start()
 
         control_sensor = multiprocessing.Process(
-                            target=listen_and_apply_control,
-                            args=(ego_role_name, carla_host,
+                            target=run_control,
+                            args=(log_dir, "apollo_control",
+                                ego_role_name, carla_host,
                                 carla_port, apollo_host, apollo_port))
         control_sensor.start()
         print("control_sensor started")
         sensors_config = multiprocessing.Process(
-                            target=setup_sensors,
-                            args=(ego_role_name, carla_host,
-                            carla_port, apollo_host, apollo_port,
-                            sensor_config))
+                            target=run_sensors,
+                            args=(log_dir, "carla_sensors",
+                                ego_role_name, carla_host,
+                                carla_port, apollo_host, apollo_port,
+                                sensor_config))
         sensors_config.start()
         print("other sensors started")
 

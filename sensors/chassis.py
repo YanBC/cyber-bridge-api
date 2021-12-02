@@ -1,6 +1,7 @@
 import math
 import carla
 import datetime
+import logging
 from sensors.base_sensor import Sensor
 from modules.canbus.proto.chassis_pb2 import FIX_3D, Chassis
 from sensors.carla_sensors import GnssSensor, get_GnssSensor
@@ -65,7 +66,7 @@ def get_ChassisAlter(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     gnss_sensor = get_GnssSensor(ego_vehicle)
     return ChassisAlter(

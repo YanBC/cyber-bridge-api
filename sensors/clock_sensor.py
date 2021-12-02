@@ -1,5 +1,6 @@
 import time
 import carla
+import logging
 from sensors.base_sensor import Sensor
 from cyber.proto.clock_pb2 import Clock
 
@@ -32,7 +33,7 @@ def get_ClockSensor(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     return ClockSensor(
         ego_vehicle, freq, name)

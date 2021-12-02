@@ -2,6 +2,7 @@ import time
 from threading import Thread
 import carla
 from typing import List
+import logging
 
 from cyber_bridge.cyber_bridge_client import CyberBridgeClient
 from sensors.base_sensor import Sensor
@@ -64,7 +65,7 @@ def setup_sensors(
     for config in sensor_config:
         sensor_type = config.get("type", None)
         if sensor_type is None:
-            print(f"sensor type not specified. {config}\n")
+            logging.warning(f"sensor type not specified. {config}\n")
             continue
 
         if sensor_type == "CorrectedImu":
@@ -83,6 +84,7 @@ def setup_sensors(
             tmp_sensor = get_Obstacles(player, config)
         elif sensor_type == "ClockSensor":
             tmp_sensor = get_ClockSensor(player, config)
+        logging.info(f"{tmp_sensor.get_name()} created")
         sensor_list.append(tmp_sensor)
 
     sensor_manager = SensorManager(
@@ -99,9 +101,14 @@ def setup_sensors(
     try:
         while True:
             if not is_actor_exist(sim_world, actor_type=player_type):
+                logging.info("ego vehicle no longer exist")
+                logging.info("exiting...")
                 break
             sim_world.wait_for_tick()
             sensor_manager.send_apollo_msgs()
     finally:
+        for t in updater_list:
+            t.join()
         for sensor in sensor_list:
+            logging.info(f"{sensor.get_name()} destroy")
             sensor.destroy()

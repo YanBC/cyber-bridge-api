@@ -1,5 +1,6 @@
 import carla
 import math
+import logging
 from sensors.base_sensor import Sensor
 from modules.perception.proto.perception_obstacle_pb2 import PerceptionObstacles, PerceptionObstacle
 from utils import get_actor_shape
@@ -105,7 +106,7 @@ def get_Obstacles(
         vehicle_distance = config['vehicle_distance']
         walker_distance = config['walker_distance']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     return Obstacles(
         ego_vehicle, freq, name, x_offset,

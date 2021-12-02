@@ -1,5 +1,6 @@
 import carla
 import time
+import logging
 from sensors.base_sensor import Sensor
 from modules.drivers.gnss.proto.gnss_best_pose_pb2 import GnssBestPose, NARROW_INT, WGS84
 from sensors.carla_sensors import GnssSensor, get_GnssSensor
@@ -45,7 +46,7 @@ def get_BestPose(
         name = config['name']
         freq = config['frequency']
     except KeyError as err:
-        print(err)
+        logging.error(err)
         raise ValueError
     gnss_sensor = get_GnssSensor(ego_vehicle)
     return BestPose(
