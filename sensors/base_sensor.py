@@ -1,7 +1,4 @@
 import time
-import weakref
-from google.protobuf.message import Message as pbMessage
-
 import carla
 from cyber_bridge.base_encoder import BaseEncoder
 from modules.common.proto.header_pb2 import Header
@@ -14,8 +11,15 @@ class Sensor:
     _apollo_msgType = None
     _apollo_pbCls = None
 
-    def __init__(self, ego_vehicle: carla.Vehicle) -> None:
-        self.sensor = None
+    def __init__(
+            self,
+            ego_vehicle: carla.Vehicle,
+            carla_sensor: carla.Sensor = None,
+            freq: float = -1.,
+            name: str = "") -> None:
+        self._freq = freq
+        self._name = name
+        self.carla_sensor = carla_sensor
         if (self._apollo_channel is None or \
                 self._apollo_msgType is None or \
                 self._apollo_pbCls is None):
@@ -37,6 +41,12 @@ class Sensor:
         self._updated = True
         raise NotImplementedError
 
+    def get_frequency(self) -> float:
+        return self._freq
+
+    def get_name(self) -> str:
+        return self._name
+
     def get_bytes(self) -> bytes:
         if self._updated:
             pbBytes = self._encoder.get_publish_bytes(self._pbCls)
@@ -51,48 +61,12 @@ class Sensor:
         self.destroy()
 
     def destroy(self):
-        if self.sensor is not None:
-            self.sensor.stop()
-            self.sensor.destroy()
-        self.sensor = None
+        if self.carla_sensor is not None:
+            self.carla_sensor.stop()
+            self.carla_sensor.destroy()
+        self.carla_sensor = None
 
     def _get_cyber_header(self):
         header = Header()
         header.timestamp_sec = time.time()
         return header
-
-
-class CarlaSensor(Sensor):
-    '''
-    This class is for demonstration purpose only;
-    Any child class should inherits from the Sensor
-    class above.
-    '''
-    _carla_bp = None
-
-    def __init__(self, ego_vehicle: carla.Vehicle, transform: carla.Transform = None) -> None:
-        if (self._apollo_channel is None or \
-                self._apollo_msgType is None or \
-                self._apollo_pbCls is None or \
-                self._carla_bp is None):
-            raise NotImplementedError
-
-        self.ego_vehicle = ego_vehicle
-        self._encoder = BaseEncoder(
-            self._apollo_pbCls, self._apollo_channel, self._apollo_msgType)
-        world = self.ego_vehicle.get_world()
-        bp = world.get_blueprint_library().find(self._carla_bp)
-        if transform is None:
-            transform = carla.Transform()
-        self.sensor = world.spawn_actor(bp, transform, attach_to=self.ego_vehicle)
-        weak_self = weakref.ref(self)
-        self.sensor.listen(lambda event: CarlaSensor.update(weak_self, event))
-
-    @staticmethod
-    def update(weak_self, event):
-        '''this method is invoked on every server tick
-        '''
-        raise NotImplementedError
-
-    def _get_pbCls(self) -> pbMessage:
-        raise NotImplementedError

@@ -1,14 +1,21 @@
+'''
+Carla native sensors support
+- All native sensors are implemented as singletons
+'''
 import carla
 import math
 import weakref
 
-# ==============================================================================
-# -- GnssSensor ----------------------------------------------------------------
-# ==============================================================================
+# ===================================
+# -- GnssSensor ---------------------
+# ===================================
 rear_to_center_in_x = -1.4224
 
 class GnssSensor(object):
-    def __init__(self, parent_actor):
+    def __init__(self, parent_actor, location=None):
+        if location is None:
+            location = carla.Location(x=rear_to_center_in_x)
+
         self.sensor = None
         self._parent = parent_actor
         self.lat = 0.0
@@ -18,7 +25,7 @@ class GnssSensor(object):
         self.timestamp = 0.0
         world = self._parent.get_world()
         bp = world.get_blueprint_library().find('sensor.other.gnss')
-        self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=rear_to_center_in_x)), attach_to=self._parent)
+        self.sensor = world.spawn_actor(bp, carla.Transform(location), attach_to=self._parent)
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
         weak_self = weakref.ref(self)
@@ -35,10 +42,14 @@ class GnssSensor(object):
         self.transform = event.transform
         self.timestamp = event.timestamp
 
+    def destroy(self):
+        self.sensor.stop()
+        self.sensor.destroy()
 
-# ==============================================================================
-# -- IMUSensor -----------------------------------------------------------------
-# ==============================================================================
+
+# ===================================
+# -- IMUSensor ----------------------
+# ===================================
 class IMUSensor(object):
     def __init__(self, parent_actor):
         self.sensor = None
@@ -71,3 +82,30 @@ class IMUSensor(object):
             max(limits[0], min(limits[1], sensor_data.gyroscope.y)),
             max(limits[0], min(limits[1], sensor_data.gyroscope.z)))
         self.compass = sensor_data.compass
+
+    def destroy(self):
+        self.sensor.stop()
+        self.sensor.destroy()
+
+
+# ===================================
+# -- singletons ---------------------
+# ===================================
+_gnss_sensor = None
+_imu_sensor = None
+
+def get_GnssSensor(player: carla.Vehicle):
+    global _gnss_sensor
+    global rear_to_center_in_x
+
+    location = carla.Location(x=rear_to_center_in_x)
+    if _gnss_sensor is None:
+        _gnss_sensor = GnssSensor(player, location)
+    return _gnss_sensor
+
+
+def get_IMUSensor(player: carla.Vehicle):
+    global _imu_sensor
+    if _imu_sensor is None:
+        _imu_sensor = IMUSensor(player)
+    return _imu_sensor

@@ -35,8 +35,9 @@ class SensorManager:
         return ret
 
 
-def sensor_update(s: Sensor, freq: float):
-    t = 1 / 100 if freq == 0 else 1 / freq
+def updater(s: Sensor):
+    freq = s.get_frequency()
+    t = 1 / 100 if freq <= 0 else 1 / freq
     while True:
         try:
             if t is not None:
@@ -52,76 +53,55 @@ def setup_sensors(
                 carla_port: int,
                 apollo_host: str,
                 apollo_port: int,
-                x_offset: float = 0.,
-                y_offset: float = 0):
+                sensor_config: dict):
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
     sim_world = client.get_world()
 
     player, player_type = get_vehicle_by_role_name(__name__, sim_world, ego_name)
-    imu_sensor = IMUSensor(player)
-    gnss_sensor = GnssSensor(player)
 
-    corrected_imu = CorrectedImu(player, imu_sensor)
-    ins_stat = InsStatus(player)
-    odometry = Odometry(player, gnss_sensor, x_offset, y_offset)
-    chassis = ChassisAlter(player, gnss_sensor)
-    best_pose = BestPose(player, gnss_sensor)
-    traffic_light = TrafficLightAlter(player, sim_world)
-    obstacles = Obstacles(player, sim_world, x_offset, y_offset)
-    clock = ClockSensor(player)
+    sensor_list = []
+    for config in sensor_config:
+        sensor_type = config.get("type", None)
+        if sensor_type is None:
+            print(f"sensor type not specified. {config}\n")
+            continue
+
+        if sensor_type == "CorrectedImu":
+            tmp_sensor = get_CorrectedImu(player, config)
+        elif sensor_type == "InsStatus":
+            tmp_sensor = get_InsStatus(player, config)
+        elif sensor_type == "Odometry":
+            tmp_sensor = get_Odometry(player, config)
+        elif sensor_type == "ChassisAlter":
+            tmp_sensor = get_ChassisAlter(player, config)
+        elif sensor_type == "BestPose":
+            tmp_sensor = get_BestPose(player, config)
+        elif sensor_type == "TrafficLightAlter":
+            tmp_sensor = get_TrafficLightAlter(player, config)
+        elif sensor_type == "Obstacles":
+            tmp_sensor = get_Obstacles(player, config)
+        elif sensor_type == "ClockSensor":
+            tmp_sensor = get_ClockSensor(player, config)
+        sensor_list.append(tmp_sensor)
 
     sensor_manager = SensorManager(
-            apollo_host, apollo_port,
-            [chassis, traffic_light, clock,
-            obstacles, corrected_imu, ins_stat, odometry, best_pose])
+            apollo_host, apollo_port, sensor_list)
 
-    all_threads = []
-    thread_chassis = Thread(
-                    target=sensor_update,
-                    args=(chassis, 10))
-    all_threads.append(thread_chassis)
+    updater_list = []
+    for sensor in sensor_list:
+        t = Thread(target=updater, args=(sensor,))
+        updater_list.append(t)
 
-    thread_best_pose = Thread(
-                    target=sensor_update,
-                    args=(best_pose, 12.5))
-    all_threads.append(thread_best_pose)
-
-    thread_odometry = Thread(
-                    target=sensor_update,
-                    args=(odometry, 12.5))
-    all_threads.append(thread_odometry)
-
-    thread_ins_stat = Thread(
-                    target=sensor_update,
-                    args=(ins_stat, 12.5))
-    all_threads.append(thread_ins_stat)
-
-    thread_corrected_imu = Thread(
-                    target=sensor_update,
-                    args=(corrected_imu, 0))
-    all_threads.append(thread_corrected_imu)
-
-    thread_obstacles = Thread(
-                    target=sensor_update,
-                    args=(obstacles, 10))
-    all_threads.append(thread_obstacles)
-
-    thread_traffic_light = Thread(
-                    target=sensor_update,
-                    args=(traffic_light, 10))
-    all_threads.append(thread_traffic_light)
-
-    thread_clock = Thread(
-                    target=sensor_update,
-                    args=(clock, 0))
-    all_threads.append(thread_clock)
-
-    for t in all_threads:
+    for t in updater_list:
         t.start()
 
-    while True:
-        if not is_actor_exist(sim_world, actor_type=player_type):
-            break
-        sim_world.wait_for_tick()
-        sensor_manager.send_apollo_msgs()
+    try:
+        while True:
+            if not is_actor_exist(sim_world, actor_type=player_type):
+                break
+            sim_world.wait_for_tick()
+            sensor_manager.send_apollo_msgs()
+    finally:
+        for sensor in sensor_list:
+            sensor.destroy()

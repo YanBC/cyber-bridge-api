@@ -3,7 +3,7 @@ import carla
 import datetime
 from sensors.base_sensor import Sensor
 from modules.canbus.proto.chassis_pb2 import FIX_3D, Chassis
-from sensors.carla_sensors import GnssSensor
+from sensors.carla_sensors import GnssSensor, get_GnssSensor
 
 
 class ChassisAlter(Sensor):
@@ -11,9 +11,17 @@ class ChassisAlter(Sensor):
     _apollo_msgType = 'apollo.canbus.Chassis'
     _apollo_pbCls = Chassis
 
-    def __init__(self, ego_vehicle: carla.Vehicle, gnss_sensor:GnssSensor) -> None:
-        super().__init__(ego_vehicle)
-        self._gnss_sensor = gnss_sensor
+    def __init__(
+            self,
+            ego_vehicle: carla.Vehicle,
+            carla_sensor: GnssSensor,
+            freq: float = -1.,
+            name: str = None) -> None:
+        super().__init__(
+                ego_vehicle=ego_vehicle,
+                carla_sensor=carla_sensor,
+                freq=freq,
+                name=name)
 
     def update(self):
         v = self.ego_vehicle.get_velocity()
@@ -32,8 +40,8 @@ class ChassisAlter(Sensor):
         self._pbCls.engine_started = True
         self._pbCls.gear_location = Chassis.GearPosition.GEAR_DRIVE
 
-        self._pbCls.chassis_gps.latitude = self._gnss_sensor.lat
-        self._pbCls.chassis_gps.longitude = self._gnss_sensor.lon
+        self._pbCls.chassis_gps.latitude = self.carla_sensor.lat
+        self._pbCls.chassis_gps.longitude = self.carla_sensor.lon
         now = datetime.datetime.now()
         self._pbCls.chassis_gps.year = now.year
         self._pbCls.chassis_gps.month = now.month
@@ -48,3 +56,17 @@ class ChassisAlter(Sensor):
 
         self._pbCls.header.CopyFrom(self._get_cyber_header())
         self._updated = True
+
+
+def get_ChassisAlter(
+        ego_vehicle: carla.Vehicle,
+        config: dict):
+    try:
+        name = config['name']
+        freq = config['frequency']
+    except KeyError as err:
+        print(err)
+        raise ValueError
+    gnss_sensor = get_GnssSensor(ego_vehicle)
+    return ChassisAlter(
+        ego_vehicle, gnss_sensor, freq, name)

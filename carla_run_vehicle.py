@@ -10,7 +10,7 @@ import carla
 from sensors.apollo_control import listen_and_apply_control
 from sensors.utils import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist, load_json_as_object
+from utils import is_actor_exist, load_json, load_json_as_object
 from scenario_runner import ScenarioRunner
 
 
@@ -34,6 +34,10 @@ def get_args():
     # argparser.add_argument(
     #     'scenario',
     #     help='specify senario config file path')
+    argparser.add_argument(
+        '--sensor-config',
+        default="sensor_configs/apollo_600_modular_testing.json",
+        help='specify sensor config file path')
     argparser.add_argument(
         '--carla',
         default='127.0.0.1',
@@ -174,6 +178,8 @@ def main():
     ego_role_name = args.adc
     show = args.show
     carla_timeout = args.timeout
+    sensor_config = load_json(args.sensor_config)
+
 
     # scenario_configs = load_json_as_object(args.scenario)
     # scenario_configs.host = carla_host
@@ -235,7 +241,7 @@ def main():
                             target=setup_sensors,
                             args=(ego_role_name, carla_host,
                             carla_port, apollo_host, apollo_port,
-                            592720.0, 4134479.0))
+                            sensor_config))
         sensors_config.start()
         print("other sensors started")
 

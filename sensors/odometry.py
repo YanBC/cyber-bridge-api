@@ -4,14 +4,14 @@ import transforms3d
 from sensors.base_sensor import Sensor
 from sensors.carla_sensors import GnssSensor
 from modules.localization.proto.gps_pb2 import Gps
-# from modules.localization.proto.pose_pb2 import Pose
+from sensors.carla_sensors import GnssSensor, get_GnssSensor
+
 
 class Odometry(Sensor):
     """
         Carla(UE) X -- East, Y -- South, Z -- Up
         Position of the vehicle reference point (VRP) in the map reference frame.
         The VRP is the center of rear axle. apollo.common.PointENU position
-
     """
     _apollo_channel = '/apollo/sensor/gnss/odometry'
     _apollo_msgType = 'apollo.localization.Gps'
@@ -20,28 +20,26 @@ class Odometry(Sensor):
     def __init__(
             self,
             ego_vehicle: carla.Vehicle,
-            gnss_sensor:GnssSensor,
+            carla_sensor: GnssSensor,
+            freq: float = -1.,
+            name: str = None,
             x_offset: float = 0.,
             y_offset: float = 0.) -> None:
-        super().__init__(ego_vehicle)
-        self._gnss_sensor = gnss_sensor
+        super().__init__(
+                ego_vehicle=ego_vehicle,
+                carla_sensor=carla_sensor,
+                freq=freq,
+                name=name)
         self.x_offset = x_offset
         self.y_offset = y_offset
 
     def update(self):
-        transform = self._gnss_sensor.transform
+        transform = self.carla_sensor.transform
         linear_vel = self.ego_vehicle.get_velocity()
 
         self._pbCls.localization.position.x = transform.location.x + self.x_offset
         self._pbCls.localization.position.y = -transform.location.y + self.y_offset
         self._pbCls.localization.position.z = transform.location.z
-
-        # print("gnss location x=%f, y=%f, z=%f" % (self._gnss_sensor.transform.location.x,
-        #                                     self._gnss_sensor.transform.location.y,
-        #                                     self._gnss_sensor.transform.location.z))
-        # print("vehicle location x=%f, y=%f, z=%f" % (transform.location.x,
-        #                                              transform.location.y,
-        #                                              transform.location.z))
 
         self._pbCls.localization.linear_velocity.x = linear_vel.x
         self._pbCls.localization.linear_velocity.y = -linear_vel.y
@@ -60,3 +58,19 @@ class Odometry(Sensor):
 
         self._pbCls.header.CopyFrom(self._get_cyber_header())
         self._updated = True
+
+
+def get_Odometry(
+        ego_vehicle: carla.Vehicle,
+        config: dict):
+    try:
+        name = config['name']
+        freq = config['frequency']
+        x_offset = config['x_offset']
+        y_offset = config['y_offset']
+    except KeyError as err:
+        print(err)
+        raise ValueError
+    gnss_sensor = get_GnssSensor(ego_vehicle)
+    return Odometry(
+        ego_vehicle, gnss_sensor, freq, name, x_offset, y_offset)
