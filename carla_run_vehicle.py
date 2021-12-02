@@ -20,7 +20,6 @@ def run_senario(args):
     try:
         scenario_runner = ScenarioRunner(args)
         result = scenario_runner.run()
-
     finally:
         if scenario_runner is not None:
             scenario_runner.destroy()
@@ -179,7 +178,6 @@ def main():
     show = args.show
     carla_timeout = args.timeout
     sensor_config = load_json(args.sensor_config)
-
 
     # scenario_configs = load_json_as_object(args.scenario)
     # scenario_configs.host = carla_host
