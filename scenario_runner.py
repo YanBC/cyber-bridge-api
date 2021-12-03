@@ -18,7 +18,7 @@ from __future__ import print_function
 import glob
 import traceback
 import argparse
-from argparse import RawTextHelpFormatter
+from argparse import Namespace, RawTextHelpFormatter
 from datetime import datetime
 from distutils.version import LooseVersion
 import importlib
@@ -511,6 +511,57 @@ class ScenarioRunner(object):
         return result
 
 
+def scenario_run(arguments:argparse.Namespace):
+
+    if arguments is None:
+         raise RuntimeError("Error: arguments is None ")
+
+    if arguments.list:
+        print("Currently the following scenarios are supported:")
+        print(*ScenarioConfigurationParser.get_list_of_scenarios(arguments.configFile), sep='\n')
+        return 1
+
+    if not arguments.scenario and not arguments.openscenario and not arguments.route:
+        print("Please specify either a scenario or use the route mode\n\n")
+        # parser.print_help(sys.stdout)
+        return 1
+
+    if arguments.route and (arguments.openscenario or arguments.scenario):
+        print("The route mode cannot be used together with a scenario (incl. OpenSCENARIO)'\n\n")
+        # parser.print_help(sys.stdout)
+        return 1
+
+    if arguments.agent and (arguments.openscenario or arguments.scenario):
+        print("Agents are currently only compatible with route scenarios'\n\n")
+        # parser.print_help(sys.stdout)
+        return 1
+
+    if arguments.openscenarioparams and not arguments.openscenario:
+        print("WARN: Ignoring --openscenarioparams when --openscenario is not specified")
+
+    if arguments.route:
+        arguments.reloadWorld = True
+
+    if arguments.agent:
+        arguments.sync = True
+
+    scenario_runner = None
+    result = True
+    try:
+        scenario_runner = ScenarioRunner(arguments)
+        result = scenario_runner.run()
+    except Exception:   # pylint: disable=broad-except
+        traceback.print_exc()
+
+    finally:
+        print("scenario_run return")
+        if scenario_runner is not None:
+            print("t1={}".format(datetime.now()))
+            scenario_runner.destroy()
+            print("t2={}".format(datetime.now()))
+            del scenario_runner
+    return not result
+
 def main():
     """
     main function
@@ -610,7 +661,6 @@ def main():
             scenario_runner.destroy()
             del scenario_runner
     return not result
-
 
 if __name__ == "__main__":
     sys.exit(main())

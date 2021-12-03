@@ -15,6 +15,8 @@ from pygame_viewer import view_game
 from utils import is_actor_exist, load_json_as_object
 from scenario_runner import ScenarioRunner
 
+sys.path.append('./sensors/bridge')
+
 def run_senario(args):
     scenario_runner = None
     result = True
@@ -113,12 +115,103 @@ def create_ego_vehicle(client):
     # world.tick()
     return world
 
-def destroy(self):
-        sensor_list = self._world.get_actors().filter("*sensor*")
+def destroy(world):
+        sensor_list = world.get_actors().filter("*sensor*")
         """Destroys all actors"""        
         for actor in sensor_list:
             if actor is not None:
                 actor.destroy()
+
+def commu_apollo_and_carla(args:argparse.Namespace):
+
+    if args is None:
+        raise RuntimeError("Error: arguments is None ")
+
+    apollo_host = args.apolloHost
+    apollo_port = args.apolloPort
+    carla_host = args.carlaHost
+    carla_port = args.carlaPort
+    ego_role_name = args.adc
+    show = args.show
+    carla_timeout = args.timeout
+
+    sim_world = None
+    try:
+        client = carla.Client(carla_host, carla_port)
+        client.set_timeout(carla_timeout)
+
+        # scenario_runner = multiprocessing.Process(
+        #                     target=run_senario,
+        #                     args=(scenario_configs,))
+        # scenario_runner.start()
+
+        # TODO: There should be some way to tell when the scenario is setup
+        # for now, let's just wait
+        # time.sleep(5)
+        # print("scenario_runner started")
+        # sim_world = create_ego_vehicle(client)  # Call to create ego vehicle if scenario_runner.py not run
+        
+        sim_world = client.get_world()
+        # sim_world = client.load_world('Town01')
+        settings = sim_world.get_settings()
+        settings.synchronous_mode = False
+        settings.fixed_delta_seconds = 0.02
+        sim_world.apply_settings(settings)
+
+        # settings = sim_world.get_settings()
+        # settings.synchronous_mode = False
+        # settings.fixed_delta_seconds = None
+        # sim_world.apply_settings(settings)
+
+        # wait for scenario runner
+        while not is_actor_exist(sim_world, role_name=ego_role_name):
+            time.sleep(1)
+
+        if show:
+            viewer = multiprocessing.Process(
+                    target=view_game,
+                    args=(ego_role_name, carla_host, carla_port))
+            viewer.start()
+
+        sensor_ready = multiprocessing.Event()
+        ready_to_tick = multiprocessing.Event()
+        control_sensor = multiprocessing.Process(
+                            target=listen_and_apply_control,
+                            args=(sensor_ready, ready_to_tick,
+                                ego_role_name, carla_host,
+                                carla_port, apollo_host, apollo_port))
+        control_sensor.start()
+        print("control_sensor started")
+        sensors_config = multiprocessing.Process(
+                            target=setup_sensors,
+                            args=(sensor_ready, ego_role_name, carla_host,
+                            carla_port, apollo_host, apollo_port))
+        sensors_config.start()
+        print("other sensors started")
+
+        # if not show:
+        #     clock = pygame.time.Clock()
+
+        while True:
+            if not is_actor_exist(sim_world, role_name=ego_role_name):
+                break
+            # sim_world.tick()
+            # # set lower limit on simulator frame rate: 10 Hz
+            # if ready_to_tick.wait(1/10):
+            #     ready_to_tick.clear()
+            # if not show:
+            #     # set uppper limit on simulator frame rate: 30 Hz
+            #     clock.tick_busy_loop(30)            
+            time.sleep(1)
+
+    finally:
+        if sim_world is not None:
+            settings = sim_world.get_settings()
+            settings.synchronous_mode = False
+            settings.fixed_delta_seconds = None
+            sim_world.apply_settings(settings)
+
+            destroy(sim_world)
 
 def main():
     args = get_args()
@@ -221,7 +314,7 @@ def main():
             settings.fixed_delta_seconds = None
             sim_world.apply_settings(settings)
 
-            destroy()
+            destroy(sim_world)
 
 if __name__ == '__main__':
     main()

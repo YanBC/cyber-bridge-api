@@ -73,9 +73,9 @@ class ApolloControl:
                 # no control signal received
                 # apply emergency stop
                 now_time = datetime.now()
-                # print(f"{__name__}[{now_time}]: no control cmd received, applying mergency stop")
-                # self.control = emergency_stop()
-                self.control = None
+                print(f"{__name__}[{now_time}]: no control cmd received, applying mergency stop")
+                self.control = emergency_stop()
+                # self.control = None
             else:
                 pbControl = pbCls_list[-1]
                 self.control = self._decoder.protobufToCarla(pbControl)
@@ -92,16 +92,17 @@ class ApolloControl:
         while True:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
-            if self.control is None:
-                continue
-
             # # world.wait_for_tick()
             # control_ready.wait()
             # self.ego_vehicle.apply_control(self.control)
             # control_ready.clear()
             # ready_to_tick.set()
 
-            world.wait_for_tick()
+            if world.get_settings().synchronous_mode == False:
+                world.wait_for_tick()
+            
+            if self.control is None:
+                continue
             self.ego_vehicle.apply_control(self.control)
 
 

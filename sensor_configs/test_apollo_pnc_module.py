@@ -74,6 +74,11 @@ def setup_sensors(
     traffic_light = TrafficLightAlter(player, sim_world)
     obstacles = Obstacles(player, sim_world)
     
+    if sim_world.get_settings().synchronous_mode:
+        sim_world.tick()
+    else:
+        sim_world.wait_for_tick()
+
     sensor_manager = SensorManager(
             apollo_host, apollo_port,
             #  [location_sensor, chassis_sensor, traffic_light_sensor,  obstacles_sensor])
@@ -84,10 +89,11 @@ def setup_sensors(
 
     while True:
         if not is_actor_exist(sim_world, actor_type=player_type):
+            if imu_sensor.sensor is not None: imu_sensor.sensor.destroy()
+            if gnss_sensor.sensor is not None: gnss_sensor.sensor.destroy()
             break
 
         sim_world.wait_for_tick()
-        # test_location(sim_world, player, gnss_sensor)
 
         while not location_sensor._updated:
             location_sensor.update()

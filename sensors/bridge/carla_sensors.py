@@ -128,6 +128,9 @@ class GnssSensor(object):
         self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=rear_to_center_in_x)), attach_to=self._parent)
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
+        if self.sensor is None:
+            raise RuntimeError(
+                "Error: Unable to spawn gnss sensor in actor{} ".format(self._parent.id))
         weak_self = weakref.ref(self)
         self.sensor.listen(lambda event: GnssSensor._on_gnss_event(weak_self, event))
 
@@ -145,8 +148,6 @@ class GnssSensor(object):
 # ==============================================================================
 # -- IMUSensor -----------------------------------------------------------------
 # ==============================================================================
-
-
 class IMUSensor(object):
     def __init__(self, parent_actor):
         self.sensor = None
@@ -158,6 +159,9 @@ class IMUSensor(object):
         bp = world.get_blueprint_library().find('sensor.other.imu')
         self.sensor = world.spawn_actor(
             bp, carla.Transform(carla.Location(x=rear_to_center_in_x)), attach_to=self._parent)
+        if self.sensor is None:
+            raise RuntimeError(
+                "Error: Unable to spawn imu sensor in actor{} ".format(self._parent.id))
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
         weak_self = weakref.ref(self)
