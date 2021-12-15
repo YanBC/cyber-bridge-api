@@ -1,0 +1,53 @@
+[
+    {
+        "name": "chassis",
+        "type": "ChassisAlter",
+        "frequency": 10.0
+    },
+    {
+        "name": "bestpose",
+        "type": "BestPose",
+        "frequency": 12.5
+    },
+    {
+        "name": "odometry",
+        "type": "Odometry",
+        "frequency": 12.5,
+        "x_offset": 0.0,
+        "y_offset": 0.0
+    },
+    {
+        "name": "insstatus",
+        "type": "InsStatus",
+        "frequency": 12.5
+    },
+    {
+        "name": "imu",
+        "type": "CorrectedImu",
+        "frequency": -1.0
+    },
+    {
+        "name": "perceptionobstacles",
+        "type": "Obstacles",
+        "frequency": 10.0,
+        "x_offset": 0.0,
+        "y_offset": 0.0,
+        "vehicle_distance": 100.0,
+        "walker_distance": 50.0
+    },
+    {
+        "name": "trafficlight",
+        "type": "TrafficLightAlter",
+        "frequency": 10.0
+    },
+    {
+        "name": "clock",
+        "type": "ClockSensor",
+        "frequency": -1.0
+    },
+    {
+        "name": "routingrequest",
+        "type": "RoutingReq",
+        "frequency": 1.0
+    }
+]

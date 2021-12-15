@@ -2,7 +2,7 @@
     "trafficManagerPort": "8000",                      
     "trafficManagerSeed": "0",                     
     "sync":false, 
-    "scenario":	"WalkerCrossing123",		  
+    "scenario":	"StopAtFixedLocation",		  
     "openscenario":null,			
     "openscenarioparams":null,   
     "route":null,
@@ -14,11 +14,17 @@
     "json":	false,	        
     "outputDir":"",
     "configFile": "/workspace/cyber-bridge-api/scenarios_manager/scenarios_config/user_scenarios_config.xml",			
-    "additionalScenario":"/workspace/cyber-bridge-api/scenarios_manager/scenarios/user_scenarios.xml",	
+    "additionalScenario":"/workspace/cyber-bridge-api/scenarios_manager/scenarios/user_scenarios.py",	
     "debug":false,			    
     "reloadWorld": false,
     "record": "",	
     "randomize": false,			
     "repetitions": 1,	
-    "waitForEgo": false
+    "waitForEgo": false,
+    "routingRequest":
+    {
+        "x": 13.57,
+        "y": 196
+    }
+    
 }

@@ -444,6 +444,7 @@ class ScenarioRunner(object):
 
         # Execute each configuration
         for config in scenario_configurations:
+            config.destination=(self._args.routingRequest['x'], self._args.routingRequest['y'])
             for _ in range(self._args.repetitions):
                 result = self._load_and_run_scenario(config)
 

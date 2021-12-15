@@ -1,6 +1,6 @@
 from google.protobuf.message import Message
 from typing import List
-from cyber_bridge_client import (
+from cyber_bridge.cyber_bridge_client import (
     op_register,
     op_add_writer,
     op_publish

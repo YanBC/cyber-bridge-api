@@ -2,6 +2,7 @@ import time
 import math
 import json
 import carla
+import numpy
 from typing import Tuple
 from types import SimpleNamespace
 
@@ -59,3 +60,23 @@ def load_json(filepath: str) -> dict:
 def load_json_as_object(filepath: str) -> object:
     data_dict = load_json(filepath)
     return SimpleNamespace(**data_dict)
+
+
+# Available on carla.Vehicle, carla.Walker
+# # carla.EnvironmentObject and carla.Junction
+# Returns (length,, width, height)
+# please refer to: https://github.com/carla-simulator/carla/issues/3670
+def get_actor_shape(a: carla.Actor) -> Tuple[float]:
+    bbox = a.bounding_box
+    # bbox = a.get_world().get_level_bbs(a.type_id)
+    # vertices = bbox.get_local_vertices()
+    # print("bounding box={}".format(bbox))
+    # v_min = vertices[0]
+    # v_max = vertices[7]
+    # length = v_max.x - v_min.x
+    # width = v_max.y - v_min.y
+    # height = v_max.z = v_min.z
+    length =numpy.clip(2 * bbox.extent.x, 0.2, 3)
+    width = numpy.clip(2 * bbox.extent.y, 0.2, 3)
+    height = numpy.clip(2 * bbox.extent.z, 0.2, 3) # carla 0.9.13 has issue on bounding box of two wheels actor
+    return (length, width, height)

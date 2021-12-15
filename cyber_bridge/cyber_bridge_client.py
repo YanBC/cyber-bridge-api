@@ -15,6 +15,7 @@ import enum
 from typing import List
 from google.protobuf.descriptor_pb2 import FileDescriptorProto
 from google.protobuf.message import Message
+import logging
 
 
 ####################################
@@ -141,7 +142,7 @@ class BufferedSocket:
         try:
             dataBytes = self._socket.recv(msgLength)
         except socket.timeout:
-            print("socket receive timed out")
+            logging.warning("socket receive timed out")
 
         if len(dataBytes) == 0:
             return ret

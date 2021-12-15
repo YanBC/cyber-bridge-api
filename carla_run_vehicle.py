@@ -2,20 +2,19 @@ import argparse
 from json import load
 import time
 import multiprocessing
-import pygame
 import random
 import os
 import sys
+import functools
+import logging
 
 import carla
+import sensors
 from sensors.apollo_control import listen_and_apply_control
-# from sensor_configs.test_apollo_control_module import setup_sensors
-from sensor_configs.test_apollo_pnc_module import setup_sensors
+from sensors.utils import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist, load_json_as_object
+from utils import is_actor_exist, load_json, load_json_as_object
 from scenario_runner import ScenarioRunner
-
-sys.path.append('./sensors/bridge')
 
 def run_senario(args):
     scenario_runner = None
@@ -23,7 +22,6 @@ def run_senario(args):
     try:
         scenario_runner = ScenarioRunner(args)
         result = scenario_runner.run()
-
     finally:
         if scenario_runner is not None:
             scenario_runner.destroy()
@@ -37,6 +35,10 @@ def get_args():
     # argparser.add_argument(
     #     'scenario',
     #     help='specify senario config file path')
+    argparser.add_argument(
+        '--sensor-config',
+        default="sensor_configs/apollo_600_modular_testing.json",
+        help='specify sensor config file path')
     argparser.add_argument(
         '--carla',
         default='127.0.0.1',
@@ -68,8 +70,14 @@ def get_args():
         type=float,
         default=20.0,
         help='Set the CARLA client timeout value in seconds')
+    argparser.add_argument(
+        '--log-dir',
+        default="./logs",
+        help='where to store log files')
     args = argparser.parse_args()
     return args
+
+
 def _load_world_from_opendrive(xodr_path, client):
     if os.path.exists(xodr_path):
         with open(xodr_path, encoding='utf-8') as od_file:
@@ -91,49 +99,129 @@ def _load_world_from_opendrive(xodr_path, client):
                 additional_width=extra_width,
                 smooth_junctions=True,
                 enable_mesh_visibility=True))
-
         return world
     else:
         print('file not found.')
         return None
 
+
+def _set_ego_vehicle_physics(vehicle):
+    # Create Wheels Physics Control
+    front_left_wheel  = carla.WheelPhysicsControl(radius=33.5)
+    front_right_wheel = carla.WheelPhysicsControl(radius=33.5)
+    rear_left_wheel   = carla.WheelPhysicsControl(radius=33.5)
+    rear_right_wheel  = carla.WheelPhysicsControl(radius=33.5)
+    physics_control = vehicle.get_physics_control()
+
+    print("length=%f, width=%f, height=%f " % (vehicle.bounding_box.extent.x * 2, vehicle.bounding_box.extent.y * 2, vehicle.bounding_box.extent.z * 2))
+    print("rpm=%f, moi=%f, damping=%f, use_gear_autobox=%d, gear_switch_time=%f,\
+            clutch_stength=%f, mass=%f, drag_coefficient=%f, ratio= %f" % ( physics_control.max_rpm,\
+    physics_control.moi,\
+    physics_control.damping_rate_full_throttle,\
+    physics_control.use_gear_autobox,\
+    physics_control.gear_switch_time,\
+    physics_control.clutch_strength,\
+    physics_control.mass,\
+    physics_control.drag_coefficient,\
+    physics_control.final_ratio ))
+    print("center x = %f, center y=%f, center z=%f" %
+        (physics_control.center_of_mass.x, physics_control.center_of_mass.y, physics_control.center_of_mass.z))
+
+    print("wheel0 = %f, wheel1 y=%f, wheel2=%f, wheel3 z=%f" %
+        (physics_control.wheels[0].max_steer_angle, physics_control.wheels[1].max_steer_angle, physics_control.wheels[2].max_steer_angle, physics_control.wheels[3].max_steer_angle))
+
+    print("radius w0 = %f, w1 y=%f, w1=%f, w3 z=%f" %
+        (physics_control.wheels[0].radius , physics_control.wheels[1].radius , physics_control.wheels[2].radius, physics_control.wheels[3].radius))
+    wheels = [front_left_wheel, front_right_wheel, rear_left_wheel, rear_right_wheel]
+    physics_control.wheels = wheels
+    vehicle.apply_physics_control(physics_control)
+    # print("wheel0 = %f, wheel1 y=%f, wheel2=%f, wheel3 z=%f" % \
+    #       (physics_control.wheels[0].max_steer_angle, physics_control.wheels[1].max_steer_angle, physics_control.wheels[2].max_steer_angle, physics_control.wheels[3].max_steer_angle))
+
+
 def create_ego_vehicle(client):
-    world = client.load_world('Town01')
-    # world = _load_world_from_opendrive('./CubeTown.xodr', client)
-    # world = _load_world_from_opendrive('./map_conv.xodr', client)
+    # world = client.load_world('Town03')
+    world = _load_world_from_opendrive('./opendrive/CubeTown.xodr', client)
     blueprint_library = world.get_blueprint_library()
     settings = world.get_settings()
     settings.synchronous_mode = False
     settings.fixed_delta_seconds = 0.02
     world.apply_settings(settings)
-    # spawn_point = carla.Transform(carla.Location(x=-74.32, y=-50, z=0.5), carla.Rotation(yaw=270))
     all_default_spawn = world.get_map().get_spawn_points()
     spawn_point = random.choice(all_default_spawn) if all_default_spawn else carla.Transform()
+
+    # spawn_location = carla.Location()
+    # spawn_location.x = 58.0
+    # spawn_location.y = 41.2
+    # spawn_location.z = 3
+    # spawn_point = world.get_map().get_waypoint(spawn_location).transform
+    # actors = world.get_actors()
+    # locations = [a.get_transform().location for a in actors]
+    # actor_distances = [(a.x-spawn_location.x)**2 + (a.y-spawn_location.y)**2 + (a.z-spawn_location.z)**2 for a in locations]
+
     ego_vehicle_bp = blueprint_library.find('vehicle.lincoln.mkz2017')
     ego_vehicle_bp.set_attribute('role_name', 'hero')
-    world.spawn_actor(ego_vehicle_bp, spawn_point) 
-    # world.tick()
+    ego = world.spawn_actor(ego_vehicle_bp, spawn_point)
+    _set_ego_vehicle_physics(ego)
     return world
+def destroy_all_sensors(world):
+    sensor_list = world.get_actors().filter("*sensor*")
+    """Destroys all actors"""
+    for actor in sensor_list:
+        if actor is not None:
+            actor.destroy()
 
-def destroy(world):
-        sensor_list = world.get_actors().filter("*sensor*")
-        """Destroys all actors"""        
-        for actor in sensor_list:
-            if actor is not None:
-                actor.destroy()
+
+def logging_wrapper(func):
+    @functools.wraps(func)
+    def wrapper(log_dir:str, name:str, *args, **kwargs):
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
+        if os.path.isfile(logfilepath):
+            os.remove(logfilepath)
+        logging.basicConfig(
+                filename=logfilepath,
+                level=logging.DEBUG,
+                format='%(asctime)s %(message)s')
+        func(*args, **kwargs)
+    return wrapper
+
+
+@logging_wrapper
+def run_pygame(*args, **kwargs):
+    return view_game(*args, **kwargs)
+
+
+@logging_wrapper
+def run_control(*args, **kwargs):
+    return listen_and_apply_control(*args, **kwargs)
+
+
+@logging_wrapper
+def run_sensors(*args, **kwargs):
+    return setup_sensors(*args, **kwargs)
 
 def commu_apollo_and_carla(args:argparse.Namespace):
 
     if args is None:
         raise RuntimeError("Error: arguments is None ")
 
-    apollo_host = args.apolloHost
-    apollo_port = args.apolloPort
-    carla_host = args.carlaHost
-    carla_port = args.carlaPort
+    apollo_host = args.apollo_host
+    apollo_port = args.apollo_port
+    carla_host = args.carla_host
+    carla_port = args.carla_port
     ego_role_name = args.adc
     show = args.show
     carla_timeout = args.timeout
+    sensor_config = load_json(args.sensor_config)
+    log_dir = args.log_dir
+
+    routing_req = dict()
+    routing_req['x'] = args.dst_x
+    routing_req['y'] = args.dst_y
+    # sensor_config.update({'routing_request': routing_req})
 
     sim_world = None
     try:
@@ -173,21 +261,21 @@ def commu_apollo_and_carla(args:argparse.Namespace):
                     args=(ego_role_name, carla_host, carla_port))
             viewer.start()
 
-        sensor_ready = multiprocessing.Event()
-        ready_to_tick = multiprocessing.Event()
         control_sensor = multiprocessing.Process(
-                            target=listen_and_apply_control,
-                            args=(sensor_ready, ready_to_tick,
+                            target=run_control,
+                            args=(log_dir, "apollo_control",
                                 ego_role_name, carla_host,
                                 carla_port, apollo_host, apollo_port))
         control_sensor.start()
-        print("control_sensor started")
+        print("control_sensor started.pid={}".format(control_sensor.pid))
         sensors_config = multiprocessing.Process(
-                            target=setup_sensors,
-                            args=(sensor_ready, ego_role_name, carla_host,
-                            carla_port, apollo_host, apollo_port))
+                            target=run_sensors,
+                            args=(log_dir, "carla_sensors",
+                                ego_role_name, carla_host,
+                                carla_port, apollo_host, apollo_port,
+                                sensor_config, routing_req))
         sensors_config.start()
-        print("other sensors started")
+        print("other sensors started,pid={}".format(sensors_config.pid))
 
         # if not show:
         #     clock = pygame.time.Clock()
@@ -206,12 +294,12 @@ def commu_apollo_and_carla(args:argparse.Namespace):
 
     finally:
         if sim_world is not None:
-            settings = sim_world.get_settings()
-            settings.synchronous_mode = False
-            settings.fixed_delta_seconds = None
-            sim_world.apply_settings(settings)
-
-            destroy(sim_world)
+            # settings = sim_world.get_settings()
+            # settings.synchronous_mode = False
+            # settings.fixed_delta_seconds = None
+            if settings is not None:
+                sim_world.apply_settings(settings)
+            destroy_all_sensors(sim_world)
 
 def main():
     args = get_args()
@@ -222,6 +310,8 @@ def main():
     ego_role_name = args.adc
     show = args.show
     carla_timeout = args.timeout
+    sensor_config = load_json(args.sensor_config)
+    log_dir = args.log_dir
 
     # scenario_configs = load_json_as_object(args.scenario)
     # scenario_configs.host = carla_host
@@ -252,59 +342,46 @@ def main():
         # for now, let's just wait
         # time.sleep(5)
         # print("scenario_runner started")
-        # sim_world = create_ego_vehicle(client)  # Call to create ego vehicle if scenario_runner.py not run
-        
-        sim_world = client.get_world()
-        # sim_world = client.load_world('Town01')
+
+        # Call to create ego vehicle if scenario_runner.py not run
+        sim_world = create_ego_vehicle(client)
+
+        # sim_world = client.get_world()
         settings = sim_world.get_settings()
         settings.synchronous_mode = False
+        # apollo control cmd issue rate is about 50Hz
         settings.fixed_delta_seconds = 0.02
         sim_world.apply_settings(settings)
 
-        # settings = sim_world.get_settings()
-        # settings.synchronous_mode = False
-        # settings.fixed_delta_seconds = None
-        # sim_world.apply_settings(settings)
-
-        # wait for scenario runner
+        # wait for ego vehicle
         while not is_actor_exist(sim_world, role_name=ego_role_name):
             time.sleep(1)
 
         if show:
             viewer = multiprocessing.Process(
-                    target=view_game,
-                    args=(ego_role_name, carla_host, carla_port))
+                    target=run_pygame,
+                    args=(log_dir, "view_game" ,ego_role_name, carla_host, carla_port, 720, 480))
             viewer.start()
 
-        sensor_ready = multiprocessing.Event()
-        ready_to_tick = multiprocessing.Event()
         control_sensor = multiprocessing.Process(
-                            target=listen_and_apply_control,
-                            args=(sensor_ready, ready_to_tick,
+                            target=run_control,
+                            args=(log_dir, "apollo_control",
                                 ego_role_name, carla_host,
                                 carla_port, apollo_host, apollo_port))
         control_sensor.start()
         print("control_sensor started")
         sensors_config = multiprocessing.Process(
-                            target=setup_sensors,
-                            args=(sensor_ready, ego_role_name, carla_host,
-                            carla_port, apollo_host, apollo_port))
+                            target=run_sensors,
+                            args=(log_dir, "carla_sensors",
+                                ego_role_name, carla_host,
+                                carla_port, apollo_host, apollo_port,
+                                sensor_config))
         sensors_config.start()
         print("other sensors started")
-
-        # if not show:
-        #     clock = pygame.time.Clock()
 
         while True:
             if not is_actor_exist(sim_world, role_name=ego_role_name):
                 break
-            # sim_world.tick()
-            # # set lower limit on simulator frame rate: 10 Hz
-            # if ready_to_tick.wait(1/10):
-            #     ready_to_tick.clear()
-            # if not show:
-            #     # set uppper limit on simulator frame rate: 30 Hz
-            #     clock.tick_busy_loop(30)            
             time.sleep(1)
 
     finally:
@@ -313,8 +390,7 @@ def main():
             settings.synchronous_mode = False
             settings.fixed_delta_seconds = None
             sim_world.apply_settings(settings)
-
-            destroy(sim_world)
+            destroy_all_sensors(sim_world)
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,7 @@
 import os
 import datetime
 import math
+import logging
 try:
     import pygame
     from pygame.locals import KMOD_CTRL
@@ -12,12 +13,12 @@ import carla
 from examples.manual_control import (
                 World, CameraManager, FadingText, HelpText,
                 find_weather_presets, get_actor_display_name)
+from examples.manual_control import KeyboardControl as MC_KeyboardControl
 from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
 
-from manual_control import KeyboardControl as MC_KeyboardControl
 
 class KeyboardControl:
     def parse_events(self):
@@ -159,9 +160,9 @@ class WorldSR(World):
         try:
             self.map = self.world.get_map()
         except RuntimeError as error:
-            print('RuntimeError: {}'.format(error))
-            print('  The server could not send the OpenDRIVE (.xodr) file:')
-            print('  Make sure it exists, has the same name of your town, and is correct.')
+            logging.error('RuntimeError: {}'.format(error))
+            logging.error('  The server could not send the OpenDRIVE (.xodr) file:')
+            logging.error('  Make sure it exists, has the same name of your town, and is correct.')
             raise RuntimeError
         self.hud = hud
         self.player = player
@@ -265,6 +266,8 @@ def view_game(
                 break
 
             if not is_actor_exist(sim_world, actor_type=player_type):
+                logging.info("ego vehicle no longer exist")
+                logging.info("exiting...")
                 break
 
             clock.tick()
