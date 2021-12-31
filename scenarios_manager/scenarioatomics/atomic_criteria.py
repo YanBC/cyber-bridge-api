@@ -345,7 +345,7 @@ class StandStillTimeTest(Criterion):
             self.actual_value = self._standstill_total_time
         else:
             if self.test_status != "SUCCESS" :
-                if self.actual_value > 0: # keep still before
+                if self.actual_value > 0: # keep still before and 0 means never stop
                     if self.actual_value <= self._duration:
                         self.test_status = "SUCCESS"
                     else:
@@ -430,3 +430,56 @@ class StandStillDistanceTest(Criterion):
         if (self.test_status == "RUNNING") or (self.test_status == "INIT"):
             self.test_status = "FAILURE"
         return super().terminate(new_status)
+
+class NeverStopTest(Criterion):
+
+    """
+    This class contains an atomic test for maximum velocity.
+
+    Important parameters:
+    - actor: CARLA actor to be used for this test
+    - distance: allow the actor keep min distance with the destination
+    - optional [optional]: If True, the result is not considered for an overall pass/fail result
+    """
+
+    def __init__(self, actor, optional=False, name="CheckNeverStopTest"):
+        """
+        Setup actor and maximum allowed velovity
+        """        
+        self._actor = actor
+        self._actor_run = False
+        super(NeverStopTest, self).__init__(name, self._actor, 0, None, optional)
+
+    def initialise(self):
+        """
+        Initialize the start time of this condition
+        """        
+        self._actor_last_location = CarlaDataProvider.get_location(self._actor)
+        super(NeverStopTest, self).initialise()
+
+    def update(self):
+        """
+        Check location
+        """
+        new_status = py_trees.common.Status.RUNNING
+
+        if self._actor is None:
+            return new_status
+
+        actor_run_distance = calculate_distance(CarlaDataProvider.get_location(self._actor), self._actor_last_location)
+        # print("run_dis = {}".format(actor_run_distance))
+        if actor_run_distance > 2:
+            self._actor_run = True
+
+        if self.test_status != "FAILURE":           
+            velocity = CarlaDataProvider.get_velocity(self._actor)  
+            if velocity <= EPSILON and self._actor_run:
+                self.actual_value = 1
+                self.test_status = "FAILURE"
+        
+        if self._terminate_on_failure and (self.test_status == "FAILURE"):
+            new_status = py_trees.common.Status.FAILURE
+
+        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+
+        return new_status

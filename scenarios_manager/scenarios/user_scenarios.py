@@ -53,7 +53,8 @@ from scenarios_manager.scenarioatomics.atomic_criteria import  (VehicleRunTest,
                                                                 MaxSpeedLimitTest, 
                                                                 ArriveAtLocationTest,
                                                                 StandStillTimeTest,
-                                                                StandStillDistanceTest)
+                                                                StandStillDistanceTest,
+                                                                NeverStopTest)
 
 
 class StationaryVehicleCrossing(BasicScenario):
@@ -6031,6 +6032,7 @@ class CrossTrafficRedLight(BasicScenario):
         if traffic_light is not None:
             if traffic_light.state != carla.TrafficLightState.Red:
                 traffic_light.set_state(carla.TrafficLightState.Red)
+                traffic_light.set_red_time(self.timeout)
                 print("traffic light should be red now")
         else:
             print("not found traffic light")
@@ -6155,6 +6157,7 @@ class CrossTrafficGreenLight(BasicScenario):
         if traffic_light is not None:
             if traffic_light.state != carla.TrafficLightState.Green:
                 traffic_light.set_state(carla.TrafficLightState.Green)
+                traffic_light.set_green_time(self.timeout)
                 print("traffic light should be green now")
         else:
             print("not found traffic light")
@@ -6191,8 +6194,10 @@ class CrossTrafficGreenLight(BasicScenario):
         """
         criteria = []
         
-        vehicle_run_criterion = VehicleRunTest(self.ego_vehicles[0])  
-        criteria.append(vehicle_run_criterion)   
+        vehicle_run_criterion = VehicleRunTest(self.ego_vehicles[0]) 
+        vehicle_never_stop_criterion = NeverStopTest(self.ego_vehicles[0])
+        criteria.append(vehicle_run_criterion)
+        criteria.append(vehicle_never_stop_criterion)   
 
         return criteria
 
