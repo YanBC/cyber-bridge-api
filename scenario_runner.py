@@ -302,7 +302,7 @@ class ScenarioRunner(object):
     def _load_and_wait_for_world(self, town, ego_vehicles=None):
         """
         Load a new CARLA world and provide data to CarlaDataProvider
-        """
+        """ 
 
         if self._args.reloadWorld:
             self.world = self.client.load_world(town)
@@ -325,6 +325,13 @@ class ScenarioRunner(object):
 
         self.world = self.client.get_world()
 
+        if self.world.get_map().name != town and self.world.get_map().name != "OpenDriveMap":
+            print("The CARLA server uses the wrong map: {}".format(self.world.get_map().name))
+            print("Reload scenario requires to use map: {}".format(town))
+            self.world = self.client.load_world(town)
+            if self.world is None:
+                return False
+
         if self._args.sync:
             settings = self.world.get_settings()
             settings.synchronous_mode = True
@@ -340,7 +347,7 @@ class ScenarioRunner(object):
 
         if CarlaDataProvider.get_map().name != town and CarlaDataProvider.get_map().name != "OpenDriveMap":
             print("The CARLA server uses the wrong map: {}".format(CarlaDataProvider.get_map().name))
-            print("This scenario requires to use map: {}".format(town))
+            print("Scenario requires to use map: {}".format(town))   
             return False
 
         return True
@@ -557,9 +564,7 @@ def scenario_run(arguments:argparse.Namespace):
     finally:
         print("scenario_run return")
         if scenario_runner is not None:
-            print("t1={}".format(datetime.now()))
             scenario_runner.destroy()
-            print("t2={}".format(datetime.now()))
             del scenario_runner
     return not result
 

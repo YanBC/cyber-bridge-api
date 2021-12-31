@@ -2,7 +2,7 @@
     {
         "name": "chassis",
         "type": "ChassisAlter",
-        "frequency": 10.0
+        "frequency": 10
     },
     {
         "name": "bestpose",

@@ -62,4 +62,22 @@
         <ego_vehicle x="120" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
         <!-- <ego_vehicle x="239.39" y="113.42" z="0.57" yaw="270" model="vehicle.lincoln.mkz2017" /> -->
     </scenario>
+    <scenario name="SpeedLimit" type="SpeedLimit" town="szl_7_1_1">
+        <ego_vehicle x="-140" y="2" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+    <scenario name="LaneKeep" type="LaneKeep" town="szl_7_1_2">
+        <ego_vehicle x="-196" y="-28" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+    <scenario name="StopSign" type="StopSign" town="szl_7_1_3">
+        <ego_vehicle x="-39" y="2.1" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+    <scenario name="WalkerThroughCrosswalk" type="WalkerThroughCrosswalk" town="Town03">
+        <ego_vehicle x="131.03" y="62.48" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+    <scenario name="CrossTrafficRedLight" type="CrossTrafficRedLight" town="Town03">
+        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+    <scenario name="CrossTrafficGreenLight" type="CrossTrafficGreenLight" town="Town03">
+        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
+    </scenario>
 </scenarios>

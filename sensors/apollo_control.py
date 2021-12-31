@@ -45,6 +45,7 @@ class ApolloControl:
         self = weak_self()
         world = self.ego_vehicle.get_world()
         actor_type = self.ego_vehicle.type_id
+        start_time = 0
         while True:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
@@ -52,10 +53,15 @@ class ApolloControl:
 
             if len(pbCls_list) == 0:
                 now_time = datetime.now()
+                if start_time == 0:
+                    start_time = datetime.now().timestamp()
+                if now_time.timestamp() > start_time + 10:
+                    break # if receive no control msg for about 10s, quit                
                 print(f"{__name__}[{now_time}]: no control cmd received, applying mergency stop")
                 self.control = _emergency_stop()
             else:
                 pbControl = pbCls_list[-1]
+                start_time = 0
                 self.control = self._decoder.protobufToCarla(pbControl)
 
     @staticmethod
@@ -63,7 +69,7 @@ class ApolloControl:
         self = weak_self()
         world = self.ego_vehicle.get_world()
         actor_type = self.ego_vehicle.type_id
-
+        start_time = 0
         while True:
             if not is_actor_exist(world, actor_type=actor_type):
                 break
@@ -71,7 +77,14 @@ class ApolloControl:
                 world.wait_for_tick()
             
             if self.control is None:
+                if start_time == 0:
+                    start_time = datetime.now().timestamp()
+
+                if datetime.now().timestamp() > start_time + 10:
+                    break # if receive no control msg for about 10s, quit  
                 continue
+            
+            start_time = 0
             self.ego_vehicle.apply_control(self.control)
 
 def listen_and_apply_control(

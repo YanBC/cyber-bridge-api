@@ -260,17 +260,9 @@ class InTimeToArrivalToVehicleWithLaneDiff(AtomicCondition):
         return new_status
 
 class InTriggertoVehiclePassDistance(AtomicCondition):
-
+    
     """
-    This class contains a check if a actor the other one, the distance between them is considered.
-
-    Important parameters:
-    - actor: CARLA actor to execute the behavior
-    - name: Name of the condition
-    - time: The behavior is successful, if TTA is less than _time_ in seconds
-    - other_actor: Reference actor used in this behavior
-
-    The condition terminates with SUCCESS, when the actor can reach the other vehicle within the given time
+     comment 
     """
 
     _max_time_to_arrival = float('inf')  # time to arrival in seconds
@@ -353,6 +345,7 @@ class InTriggertoVehiclePassDistance(AtomicCondition):
 
 class InTriggertoVehicleArrive(AtomicCondition):
 
+
     """
     This class contains a check if a actor the other one, the distance between them is considered.
 
@@ -419,6 +412,47 @@ class InTriggertoVehicleArrive(AtomicCondition):
         if dis_from_actor_right_to_lane_line <= 0.3 and dis_from_actor_head_to_des <= 10:
                 new_status = py_trees.common.Status.SUCCESS      
         
+        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+
+        return new_status
+
+
+class InArrivalToLocation(AtomicCondition):
+
+    """
+    This class contains a check if a actor arrives at a given location.
+    
+    """
+
+    def __init__(self, actor, location, name="InArrivalToLocation"):
+        """
+        Setup parameters
+        """
+        super(InArrivalToLocation, self).__init__(name)
+        self.logger.debug("%s.__init__()" % (self.__class__.__name__))
+        self._actor = actor
+        self._target_location = location
+
+    def update(self):
+        """
+        Check if the actor can arrive at target_location within time
+        """
+        new_status = py_trees.common.Status.RUNNING
+
+        current_location = CarlaDataProvider.get_location(self._actor)
+        if current_location is None:
+            return new_status
+
+        if isinstance(self._actor, (carla.Vehicle, carla.Walker)):
+            actor_extent_x = self._actor.bounding_box.extent.x
+        else:
+            # Patch, as currently static objects have no bounding boxes
+            actor_extent_x = 0
+
+        distance = calculate_distance(current_location, self._target_location)
+        if actor_extent_x > EPSILON + distance:            
+            new_status = py_trees.common.Status.SUCCESS
+
         self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
 
         return new_status

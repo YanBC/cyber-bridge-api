@@ -47,7 +47,7 @@ class RoutingReq(Sensor):
 
         self._pbCls.header.CopyFrom(self._get_cyber_header())
         self._updated = True
-        print("update routing requst msg {}".format(self._pbCls.waypoint))
+        print("update routing requst msg \n {}".format(self._pbCls.waypoint))
 
 def get_RoutingReq(
         ego_vehicle: carla.Vehicle,

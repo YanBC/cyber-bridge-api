@@ -137,7 +137,8 @@ def main():
         process_manage = ProcessManage(run_scenario, commu_ac)
         
         while True:
-            if not run_scenario.is_alive():            
+            if not run_scenario.is_alive():                
+                os.kill(commu_ac.pid, signal.SIGUSR1)        
                 break
             time.sleep(1)
     

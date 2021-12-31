@@ -2,7 +2,7 @@
     "trafficManagerPort": "8000",                      
     "trafficManagerSeed": "0",                     
     "sync":false, 
-    "scenario":	"StopAtFixedLocation",		  
+    "scenario":	"CrossTrafficGreenLight",		  
     "openscenario":null,			
     "openscenarioparams":null,   
     "route":null,
@@ -23,8 +23,8 @@
     "waitForEgo": false,
     "routingRequest":
     {
-        "x": 13.57,
-        "y": 196
+        "x": 239.39,
+        "y": 20.42
     }
     
 }

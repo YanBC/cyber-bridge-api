@@ -56,3 +56,28 @@ class DecelerateToVelocity(AtomicBehavior):
         self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
 
         return new_status
+
+class Fail(AtomicBehavior):
+
+    """
+    This class contains an fail behavior scenario
+
+    Important parameters:
+    - duration[optional]: Duration in seconds of this behavior
+
+    A termination can be enforced by providing a duration value.
+    Alternatively, a parallel termination behavior has to be used.
+    """
+
+    def __init__(self, name="Fail"):
+        """
+        Setup actor
+        """
+        super(Fail, self).__init__(name)
+        self.logger.debug("%s.__init__()" % (self.__class__.__name__))
+
+    def update(self):
+        """
+        Return failure
+        """
+        return py_trees.common.Status.FAILURE
