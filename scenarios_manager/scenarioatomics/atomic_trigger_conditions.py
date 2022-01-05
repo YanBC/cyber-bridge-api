@@ -39,6 +39,53 @@ import srunner.tools as sr_tools
 
 EPSILON = 0.001
 
+def _retrieve_traffic_landmark(map: carla.Map,
+                                vehicle: carla.Vehicle,
+                                distance: float = 30.):
+        tmp_map = map
+        tmp_vehicle = vehicle
+        traffic_light_landmarks = []
+        waypoint_ego_near = tmp_map.get_waypoint(
+                tmp_vehicle.get_location(),
+                project_to_road=True,
+                lane_type=(carla.LaneType.Driving|carla.LaneType.Sidewalk))
+        if waypoint_ego_near is not None:
+            landmarks = waypoint_ego_near.get_landmarks(distance)
+            for landmark in landmarks:
+                if landmark.type == '1000001':
+                    if len(traffic_light_landmarks) == 0:
+                        traffic_light_landmarks.append(landmark)
+                    elif len(traffic_light_landmarks) > 0 and landmark.id != traffic_light_landmarks[-1].id:
+                        traffic_light_landmarks.append(landmark)
+        else:
+            print('Generate ego vehicle waypoint failed!')
+        return traffic_light_landmarks
+        
+def set_traffic_light_state(map, actor, light_state, light_keep_time = 60.0):
+    traffic_light = None
+    _map = map
+    _actor = actor
+    # traffic_light = self.ego_vehicles[0].get_traffic_light()
+    traffic_light_lm = _retrieve_traffic_landmark(_map,
+                                                  _actor,
+                                                  100)
+
+    for tl_lm in traffic_light_lm:
+        traffic_light = CarlaDataProvider.get_world().get_traffic_light(tl_lm)
+        break
+    
+    if traffic_light is not None:
+        if traffic_light.state != light_state:
+            traffic_light.set_state(light_state)                
+            print("traffic light should be {} now".format(light_state))
+
+        if carla.TrafficLightState.Green == light_state:
+            traffic_light.set_green_time(light_keep_time)
+        else:
+            traffic_light.set_red_time(light_keep_time)
+    else:
+        print("not found traffic light")
+
 class TriggerInSameLane(AtomicCondition):
 
     """
@@ -451,6 +498,60 @@ class InArrivalToLocation(AtomicCondition):
 
         distance = calculate_distance(current_location, self._target_location)
         if actor_extent_x > EPSILON + distance:            
+            new_status = py_trees.common.Status.SUCCESS
+
+        self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))
+
+        return new_status
+
+class InTriggerDistanceToLocationSetTrafficLight(AtomicCondition):
+
+    """
+    This class contains the trigger (condition) for a distance to a fixed
+    location of a scenario
+
+    Important parameters:
+    - actor: CARLA actor to execute the behavior
+    - target_location: Reference location (carla.location)
+    - name: Name of the condition
+    - distance: Trigger distance between the actor and the target location in meters
+
+    The condition terminates with SUCCESS, when the actor reached the target distance to the given location
+    """
+
+    def __init__(self,
+                 actor,
+                 target_location,
+                 distance,
+                 comparison_operator=operator.lt,
+                 name="InTriggerDistanceToLocationSetTrafficLight"):
+        """
+        Setup trigger distance
+        """
+        super(InTriggerDistanceToLocationSetTrafficLight, self).__init__(name)
+        self.logger.debug("%s.__init__()" % (self.__class__.__name__))
+        self._target_location = target_location
+        self._actor = actor
+        self._map = CarlaDataProvider.get_map()
+        self._distance = distance
+        self._comparison_operator = comparison_operator
+
+    def update(self):
+        """
+        Check if the actor is within trigger distance to the target location
+        """
+
+        new_status = py_trees.common.Status.RUNNING
+
+        location = CarlaDataProvider.get_location(self._actor)
+
+        if location is None:
+            return new_status
+
+        distance = calculate_distance(location, self._target_location)
+        # print("distance to destination={}".format(distance))
+        if self._comparison_operator(distance, self._distance):
+            set_traffic_light_state(self._map, self._actor, carla.TrafficLightState.Green, 0.1)
             new_status = py_trees.common.Status.SUCCESS
 
         self.logger.debug("%s.update()[%s->%s]" % (self.__class__.__name__, self.status, new_status))

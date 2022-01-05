@@ -2,7 +2,7 @@
     "trafficManagerPort": "8000",                      
     "trafficManagerSeed": "0",                     
     "sync":false, 
-    "scenario":	"CrossTrafficGreenLight",		  
+    "scenario":	"CrossTrafficRedLight",		  
     "openscenario":null,			
     "openscenarioparams":null,   
     "route":null,

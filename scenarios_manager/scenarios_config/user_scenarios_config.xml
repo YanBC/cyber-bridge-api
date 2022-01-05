@@ -75,9 +75,9 @@
         <ego_vehicle x="131.03" y="62.48" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
     </scenario>
     <scenario name="CrossTrafficRedLight" type="CrossTrafficRedLight" town="Town03">
-        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
+        <ego_vehicle x="239.39" y="133.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
     </scenario>
     <scenario name="CrossTrafficGreenLight" type="CrossTrafficGreenLight" town="Town03">
-        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
+        <ego_vehicle x="239.39" y="110.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
     </scenario>
 </scenarios>

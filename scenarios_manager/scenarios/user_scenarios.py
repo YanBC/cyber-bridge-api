@@ -42,11 +42,13 @@ from srunner.tools.scenario_helper import (get_location_in_distance_from_wp,
                                            get_waypoint_in_distance,
                                            get_geometric_linear_intersection)
 
-from scenarios_manager.scenarioatomics.atomic_trigger_conditions import (TriggerInSameLane,
+from scenarios_manager.scenarioatomics.atomic_trigger_conditions import (set_traffic_light_state,
+                                                                        TriggerInSameLane,
                                                                         InTimeToArrivalToLocationBasedOnMaxSpeed,
                                                                         InTimeToArrivalToVehicleWithLaneDiff,
                                                                         InTriggertoVehiclePassDistance,
-                                                                        InArrivalToLocation)
+                                                                        InArrivalToLocation,
+                                                                        InTriggerDistanceToLocationSetTrafficLight)
 from scenarios_manager.scenarioatomics.atomic_behaviors import (DecelerateToVelocity, Fail)
 from scenarios_manager.scenarioatomics.atomic_criteria import  (VehicleRunTest, 
                                                                 InArriveRegionTest, 
@@ -6018,7 +6020,7 @@ class CrossTrafficRedLight(BasicScenario):
             print('Generate ego vehicle waypoint failed!')
         return traffic_light_landmarks
         
-    def _init_traffic_light_state(self):
+    def _init_traffic_light_state(self, light_state, light_keep_time=60):
         traffic_light = None
         # traffic_light = self.ego_vehicles[0].get_traffic_light()
         traffic_light_lm = self._retrieve_traffic_landmark(self._map,
@@ -6030,10 +6032,14 @@ class CrossTrafficRedLight(BasicScenario):
             break
         
         if traffic_light is not None:
-            if traffic_light.state != carla.TrafficLightState.Red:
-                traffic_light.set_state(carla.TrafficLightState.Red)
-                traffic_light.set_red_time(self.timeout)
-                print("traffic light should be red now")
+            if traffic_light.state != light_state:
+                traffic_light.set_state(light_state)                
+                print("traffic light should be {} now".format(light_state))
+
+            if carla.TrafficLightState.Green == light_state:
+                traffic_light.set_green_time(light_keep_time)
+            else:
+                traffic_light.set_red_time(light_keep_time)
         else:
             print("not found traffic light")
 
@@ -6043,13 +6049,15 @@ class CrossTrafficRedLight(BasicScenario):
         - 
         """       
 
-        self._init_traffic_light_state()  
+        # self._init_traffic_light_state(carla.TrafficLightState.Green)  
+        set_traffic_light_state(self._map, self.ego_vehicles[0], carla.TrafficLightState.Green)  
 
         # Behavior
         behaviour = py_trees.composites.Sequence("Behavior", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
 
         trigger_velocity = TriggerVelocity(self.ego_vehicles[0], self.speed_require)
-        behaviour.add_child(trigger_velocity)
+        # behaviour.add_child(trigger_velocity)
+        behaviour.add_child(InTriggerDistanceToLocationSetTrafficLight(self.ego_vehicles[0], self.ref_wp.transform.location, 40))
         behaviour.add_child(StandStill(self.ego_vehicles[0], name="CheckStankStill", duration = 3))
         behaviour.add_child(DriveDistance(self.ego_vehicles[0], 5))
 
@@ -6091,10 +6099,10 @@ class CrossTrafficGreenLight(BasicScenario):
     This is a single ego vehicle scenario
     """
     def __init__(self, world, ego_vehicles, config, randomize=False, debug_mode=False, criteria_enable=True,
-                 timeout=20):
+                 timeout=30):
         self.timeout = timeout
         self._map = CarlaDataProvider.get_map()
-        self.speed_require = 30/3.6 # 20km/h
+        self.speed_require = 30/3.6 # 30km/h
         self.stop_line_location = carla.Location(239.39, 77.61)
         self.ref_wp = CarlaDataProvider.get_map().get_waypoint(self.stop_line_location, project_to_road = False)
         print("stop line refer point = {}".format(self.ref_wp.transform.location))
@@ -6119,73 +6127,34 @@ class CrossTrafficGreenLight(BasicScenario):
 
         if randomize:
             self._velocity = random.randint(20, 60)
-            self._trigger_distance = random.randint(10, 40)
-
-    def _retrieve_traffic_landmark(self, map: carla.Map,
-                                vehicle: carla.Vehicle,
-                                distance: float = 30.):
-        tmp_map = map
-        tmp_vehicle = vehicle
-        traffic_light_landmarks = []
-        waypoint_ego_near = tmp_map.get_waypoint(
-                tmp_vehicle.get_location(),
-                project_to_road=True,
-                lane_type=(carla.LaneType.Driving|carla.LaneType.Sidewalk))
-        if waypoint_ego_near is not None:
-            landmarks = waypoint_ego_near.get_landmarks(distance)
-            for landmark in landmarks:
-                if landmark.type == '1000001':
-                    if len(traffic_light_landmarks) == 0:
-                        traffic_light_landmarks.append(landmark)
-                    elif len(traffic_light_landmarks) > 0 and landmark.id != traffic_light_landmarks[-1].id:
-                        traffic_light_landmarks.append(landmark)
-        else:
-            print('Generate ego vehicle waypoint failed!')
-        return traffic_light_landmarks
-        
-    def _init_traffic_light_state(self):
-        traffic_light = None
-        # traffic_light = self.ego_vehicles[0].get_traffic_light()
-        traffic_light_lm = self._retrieve_traffic_landmark(self._map,
-                                                      self.ego_vehicles[0],
-                                                      100)
-
-        for tl_lm in traffic_light_lm:
-            traffic_light = CarlaDataProvider.get_world().get_traffic_light(tl_lm)
-            break
-        
-        if traffic_light is not None:
-            if traffic_light.state != carla.TrafficLightState.Green:
-                traffic_light.set_state(carla.TrafficLightState.Green)
-                traffic_light.set_green_time(self.timeout)
-                print("traffic light should be green now")
-        else:
-            print("not found traffic light")
+            self._trigger_distance = random.randint(10, 40)    
 
     def _create_behavior(self):
         """
         Order of sequence:
         - 
-        """       
+        """
 
-        self._init_traffic_light_state()  
+        set_traffic_light_state(self._map, self.ego_vehicles[0], carla.TrafficLightState.Green)  
 
         # Behavior
         behaviour = py_trees.composites.Sequence("Behavior", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
 
         trigger_velocity = TriggerVelocity(self.ego_vehicles[0], self.speed_require)
         behaviour.add_child(trigger_velocity)
-        behaviour.add_child(StandStill(self.ego_vehicles[0], name="CheckStankStill", duration = 3))
-        behaviour.add_child(DriveDistance(self.ego_vehicles[0], 5))
+        # behaviour.add_child(InArrivalToLocation(self.ego_vehicles[0], self.ref_wp.transform.location))
+        # behaviour.add_child(DriveDistance(self.ego_vehicles[0], 5))
+        # behaviour.add_child(Fail())
 
-        end_condition = py_trees.composites.Sequence("EndConditon", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
-        end_condition.add_child(InArrivalToLocation(self.ego_vehicles[0], self.ref_wp.transform.location))
-        end_condition.add_child(DriveDistance(self.ego_vehicles[0], 5))
-        end_condition.add_child(Fail())
+        # end_condition = py_trees.composites.Sequence("EndConditon", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
+        # end_condition.add_child(InArrivalToLocation(self.ego_vehicles[0], self.ref_wp.transform.location))
+        # end_condition.add_child(DriveDistance(self.ego_vehicles[0], 5))
+        # end_condition.add_child(Fail())
+
         # build tree
         root = py_trees.composites.Parallel(policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ONE)
         root.add_child(behaviour)
-        root.add_child(end_condition)
+        # root.add_child(end_condition)
         return root
 
     def _create_test_criteria(self):
