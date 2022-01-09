@@ -123,3 +123,6 @@ python3 config.py --no-rendering
 
 See https://carla.readthedocs.io/en/0.9.11/adv_rendering_options/ for details.
 
+### env setting
+export SCENARIO_RUNNER_ROOT="/third-parties/scenario_runner/"
+

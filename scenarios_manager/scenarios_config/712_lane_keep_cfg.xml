@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<scenarios>
+    <scenario name="LaneKeep" type="LaneKeep" town="Town03">
+        <ego_vehicle x="228.72" y="120" z="3" yaw="90" model="vehicle.lincoln.mkz2017" />
+        <destination x="147.33" y="193" />
+    </scenario>
+   <!-- <scenario name="LaneKeep" type="LaneKeep" town="szl_7_1_2">
+        <ego_vehicle x="-196" y="-28" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+        <destination x="151" y="72" />
+    </scenario> -->
+</scenarios>

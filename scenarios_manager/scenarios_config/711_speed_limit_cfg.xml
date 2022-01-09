@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<scenarios>
+    <scenario name="SpeedLimit" type="SpeedLimit" town="Town03">
+        <ego_vehicle x="70" y="194" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
+        <destination x="20" y="194" />
+    </scenario>
+    <!-- <scenario name="SpeedLimit" type="SpeedLimit" town="szl_7_1_1">
+        <ego_vehicle x="-140" y="2" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+        <destination x="-80" y="2" />
+    </scenario> -->
+</scenarios>

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<scenarios>
+    <scenario name="StopSign" type="StopSign" town="Town03">
+        <ego_vehicle x="131.03" y="62.48" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+        <destination x="161.9" y="62.41" />
+    </scenario>
+    <!-- <scenario name="StopSign" type="StopSign" town="Town03">
+        <ego_vehicle x="-145.56" y="99.70" z="1" yaw="0" model="vehicle.lincoln.mkz2017" />
+        <destination x="-145.56" y="52.82" />
+    </scenario> -->
+    <!-- <scenario name="StopSign" type="StopSign" town="szl_7_1_3">
+        <ego_vehicle x="-39" y="2.1" z="3" yaw="0" model="vehicle.lincoln.mkz2017" />
+        <destination x="48" y="1.8" />
+    </scenario> -->
+
+</scenarios>

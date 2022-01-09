@@ -1,4 +1,4 @@
-import time
+from math import log
 from threading import (Thread, Event)
 import carla
 from typing import List
@@ -17,8 +17,8 @@ from utils import (
 
 class SensorManager:
     def __init__(
-            self, host:str, port:int,
-            sensors:List[Sensor]) -> None:
+            self, host: str, port: int,
+            sensors: List[Sensor]) -> None:
         self.bridge = CyberBridgeClient(
                 host, port, [s._encoder for s in sensors], [])
         self.bridge.initialize()
@@ -57,6 +57,7 @@ def updater(s: Sensor, e: Event):
         finally:
             pass
 
+
 def setup_sensors(
                 ego_name: str,
                 carla_host: str,
@@ -69,7 +70,9 @@ def setup_sensors(
     client.set_timeout(4.0)
     sim_world = client.get_world()
 
-    player, player_type = get_vehicle_by_role_name(__name__, sim_world, ego_name)
+    player, player_type = get_vehicle_by_role_name(__name__,
+                                                   sim_world,
+                                                   ego_name)
 
     sensor_list = []
     for config in sensor_config:
@@ -111,7 +114,7 @@ def setup_sensors(
             updater_list.append(t)
         else:  # routing request sent only once
             sensor.update()
-            print("Sensor into={}{}".format(sensor, sensor._updated))
+            logging.info("Sensor into={}{}".format(sensor, sensor._updated))
     for t in updater_list:
         t.start()
 

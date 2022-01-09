@@ -2,7 +2,7 @@
     "trafficManagerPort": "8000",                      
     "trafficManagerSeed": "0",                     
     "sync":false, 
-    "scenario":	"CrossTrafficGreenLight",		  
+    "scenario":	"FollowCyclist",		  
     "openscenario":null,			
     "openscenarioparams":null,   
     "route":null,
@@ -13,18 +13,12 @@
     "junit": false,
     "json":	false,	        
     "outputDir":"",
-    "configFile": "/workspace/cyber-bridge-api/scenarios_manager/scenarios_config/user_scenarios_config.xml",			
-    "additionalScenario":"/workspace/cyber-bridge-api/scenarios_manager/scenarios/user_scenarios.py",	
+    "configFile": "./scenarios_manager/scenarios_config/733_follow_cyclist_cfg.xml",			
+    "additionalScenario":"./scenarios_manager/scenarios/user_scenarios.py",	
     "debug":false,			    
     "reloadWorld": false,
     "record": "",	
     "randomize": false,			
     "repetitions": 1,	
-    "waitForEgo": false,
-    "routingRequest":
-    {
-        "x": 239.39,
-        "y": 20.42
-    }
-    
+    "waitForEgo": false    
 }

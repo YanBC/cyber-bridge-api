@@ -1,4 +1,3 @@
-from typing import Dict
 import carla
 import logging
 from sensors.base_sensor import Sensor
@@ -25,7 +24,7 @@ class RoutingReq(Sensor):
             name: str = None) -> None:
         super().__init__(
                 ego_vehicle=ego_vehicle,
-                carla_sensor=carla_sensor,                
+                carla_sensor=carla_sensor,
                 freq=freq,
                 name=name)
         self._destination = destination
@@ -47,7 +46,9 @@ class RoutingReq(Sensor):
 
         self._pbCls.header.CopyFrom(self._get_cyber_header())
         self._updated = True
-        print("update routing requst msg \n {}".format(self._pbCls.waypoint))
+        logging.info("update routing requst msg {}".format(
+            self._pbCls.waypoint))
+
 
 def get_RoutingReq(
         ego_vehicle: carla.Vehicle,

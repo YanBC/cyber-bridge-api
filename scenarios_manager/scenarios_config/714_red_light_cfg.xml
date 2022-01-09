@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<scenarios>
+    <scenario name="CrossTrafficRedLight" type="CrossTrafficRedLight" town="Town03">
+        <ego_vehicle x="239.39" y="133.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
+        <destination x="239.39" y="20.42" />
+    </scenario>
+</scenarios>

@@ -1,5 +1,5 @@
+import logging
 import os
-import sys
 import multiprocessing
 import argparse
 import time
@@ -8,36 +8,39 @@ import signal
 
 from carla_run_vehicle import commu_apollo_and_carla
 from scenario_runner import scenario_run
+from scenario_parser import ScenarioConfigurationParser as SrCfgP
 
-# sys.path.append('/third-parties/scenario_runner/')
+
 class ProcessManage(object):
     def __init__(self, *argv):
         self._pro_pid_list = []
         for arg in argv:
-             self._pro_pid_list.append(arg)
-             print("Add new pro pid={}".format(arg.pid))
+            self._pro_pid_list.append(arg)
+            logging.info("Add new pro pid={}".format(arg.pid))
 
         # pass
         signal.signal(signal.SIGINT, self._signal_handler)  # Ctrl + C
         signal.signal(signal.SIGTERM, self._signal_handler)
 
     def add_new_pro(self, *argv):
-         for arg in argv:
-             self._pro_pid_list.append(arg)
+        for arg in argv:
+            self._pro_pid_list.append(arg)
 
     def destroy(self):
         for pid in self._pro_pid_list:
             if pid is not None and pid.is_alive():
                 pid.terminate()
-    
+
     def _signal_handler(self, signum, frame):
-        print("Receive signal. signum={}, frame={}",signum, frame)
+        print("Receive signal. signum={}, frame={}", signum, frame)
         self.destroy()
 
-def get_args():    
+
+def get_args():
     argparser = argparse.ArgumentParser(
-        description='Run scenarios which run in carla, and the AD statck is Apollo')
-    
+        description='Run scenarios which run in carla, '
+        'and the AD statck is Apollo')
+
     argparser.add_argument(
         '--carla-host',
         default='127.0.0.1',
@@ -76,10 +79,12 @@ def get_args():
     argparser.add_argument(
         '--log-dir',
         default="./logs",
-        help='where to store log files')        
-    argparser.add_argument(
-        '--list', action="store_true", help='List all supported scenarios and exit')
-    argparser.add_argument('--configFile', default='./scenario_configs/scenario_configs.json', help='Provide a scenario configuration file (*.json)')  
+        help='where to store log files')
+    argparser.add_argument('--configFile',
+                           default='./scenario_configs/'
+                           '743_borrow_lane_cfg.json',
+                           help='Provide a scenario configuration file '
+                           '(*.json)')
 
     args = argparser.parse_args()
 
@@ -100,53 +105,62 @@ def get_args():
     sr_host_dict.update({'port': args.carla_port})
     sr_host_dict.update({'timeout': args.timeout})
 
+    scenario_configurations = []
+    # cfg_file = "./scenario_configs/{}".format(args.configFile)
     with open(args.configFile) as config_file:
-        if config_file is not None:            
+        if config_file is not None:
             sr_config = json.load(config_file)
-            sr_config.update({'list': args.list})  # append new element 'list' to the list
-        else:            
-            sr_config = None 
+            sr_config.update({'list': False})
+            scenario_configurations = \
+                SrCfgP.parse_scenario_configuration_with_customer_param(
+                        sr_config['scenario'],
+                        sr_config['configFile'])
+            sr_config.update(
+                {'scenario_configurations': scenario_configurations})
+        else:
+            sr_config = None
             print("Error!!! Can't find the scenario config file.")
 
     if sr_config is not None:
-        ac_args.dst_x = sr_config['routingRequest']['x']
-        ac_args.dst_y = sr_config['routingRequest']['y']
+        if len(scenario_configurations) > 0:
+            ac_args.dst_x = scenario_configurations[0].destination.x
+            ac_args.dst_y = scenario_configurations[0].destination.y
+            ac_args.dst_z = scenario_configurations[0].destination.z
 
-        sr_args = {**sr_host_dict, **sr_config}   # scenario runner args        
+        sr_args = {**sr_host_dict, **sr_config}   # scenario runner args
         return ac_args, argparse.Namespace(**sr_args)
     else:
         return ac_args, None
+
 
 def main():
     try:
         run_scenario = None
         commu_ac = None
-        process_manage = None
 
-        print("Com scenario runner pid={}".format(os.getpid()))
+        logging.info("Com scenario runner pid={}".format(os.getpid()))
         ac_args, sr_args = get_args()
         if sr_args is None:
             return
 
-        run_scenario = multiprocessing.Process(target=scenario_run, args=(sr_args,))
+        run_scenario = multiprocessing.Process(target=scenario_run,
+                                               args=(sr_args,))
         run_scenario.start()
-        if not sr_args.list:
-            commu_ac = multiprocessing.Process(target=commu_apollo_and_carla, args=(ac_args,))
-            commu_ac.start()       
-              
-        process_manage = ProcessManage(run_scenario, commu_ac)
-        
+        commu_ac = multiprocessing.Process(target=commu_apollo_and_carla,
+                                           args=(ac_args,))
+        commu_ac.start()
+
+        ProcessManage(run_scenario, commu_ac)
+
         while True:
-            if not run_scenario.is_alive():                
-                os.kill(commu_ac.pid, signal.SIGUSR1)        
+            if not run_scenario.is_alive():
+                os.kill(commu_ac.pid, signal.SIGUSR1)
                 break
             time.sleep(1)
-    
+
     finally:
         pass
-    #    if process_manage is not None: process_manage.destroy()
-    #    if run_scenario is not None: run_scenario.join()
-    #    if commu_ac is not None: commu_ac.join()       
+
 
 if __name__ == "__main__":
     main()

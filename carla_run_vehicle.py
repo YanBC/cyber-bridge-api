@@ -1,5 +1,4 @@
 import argparse
-from json import load
 import time
 import multiprocessing
 import random
@@ -9,12 +8,12 @@ import functools
 import logging
 
 import carla
-import sensors
 from sensors.apollo_control import listen_and_apply_control
 from sensors.utils import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist, load_json, load_json_as_object
+from utils import is_actor_exist, load_json
 from scenario_runner import ScenarioRunner
+
 
 def run_senario(args):
     scenario_runner = None
@@ -148,7 +147,10 @@ def create_ego_vehicle(client):
     settings.fixed_delta_seconds = 0.02
     world.apply_settings(settings)
     all_default_spawn = world.get_map().get_spawn_points()
-    spawn_point = random.choice(all_default_spawn) if all_default_spawn else carla.Transform()
+    if all_default_spawn:
+        spawn_point = random.choice(all_default_spawn)
+    else:
+        spawn_point = carla.Transform()
 
     # spawn_location = carla.Location()
     # spawn_location.x = 58.0
@@ -164,6 +166,8 @@ def create_ego_vehicle(client):
     ego = world.spawn_actor(ego_vehicle_bp, spawn_point)
     _set_ego_vehicle_physics(ego)
     return world
+
+
 def destroy_all_sensors(world):
     sensor_list = world.get_actors().filter("*sensor*")
     """Destroys all actors"""
@@ -203,11 +207,13 @@ def run_control(*args, **kwargs):
 def run_sensors(*args, **kwargs):
     return setup_sensors(*args, **kwargs)
 
-def commu_apollo_and_carla(args:argparse.Namespace):
+
+def commu_apollo_and_carla(args: argparse.Namespace):
 
     if args is None:
         raise RuntimeError("Error: arguments is None ")
 
+    logging.basicConfig(level=logging.DEBUG)
     apollo_host = args.apollo_host
     apollo_port = args.apollo_port
     carla_host = args.carla_host
@@ -221,6 +227,7 @@ def commu_apollo_and_carla(args:argparse.Namespace):
     routing_req = dict()
     routing_req['x'] = args.dst_x
     routing_req['y'] = args.dst_y
+    routing_req['z'] = args.dst_z
     # sensor_config.update({'routing_request': routing_req})
 
     sim_world = None
@@ -238,7 +245,7 @@ def commu_apollo_and_carla(args:argparse.Namespace):
         # time.sleep(5)
         # print("scenario_runner started")
         # sim_world = create_ego_vehicle(client)  # Call to create ego vehicle if scenario_runner.py not run
-        
+
         sim_world = client.get_world()
         # sim_world = client.load_world('Town01')
         settings = sim_world.get_settings()
@@ -263,19 +270,20 @@ def commu_apollo_and_carla(args:argparse.Namespace):
 
         control_sensor = multiprocessing.Process(
                             target=run_control,
-                            args=(log_dir, "apollo_control",
-                                ego_role_name, carla_host,
-                                carla_port, apollo_host, apollo_port))
+                            args=(log_dir, "apollo_control", ego_role_name,
+                                  carla_host, carla_port, apollo_host,
+                                  apollo_port))
         control_sensor.start()
-        print("control_sensor started.pid={}".format(control_sensor.pid))
+        logging.info("control_sensor started.pid={}".format(
+                     control_sensor.pid))
         sensors_config = multiprocessing.Process(
                             target=run_sensors,
                             args=(log_dir, "carla_sensors",
-                                ego_role_name, carla_host,
-                                carla_port, apollo_host, apollo_port,
-                                sensor_config, routing_req))
+                                  ego_role_name, carla_host,
+                                  carla_port, apollo_host, apollo_port,
+                                  sensor_config, routing_req))
         sensors_config.start()
-        print("other sensors started,pid={}".format(sensors_config.pid))
+        logging.info("other sensors started,pid={}".format(sensors_config.pid))
 
         # if not show:
         #     clock = pygame.time.Clock()
@@ -300,6 +308,7 @@ def commu_apollo_and_carla(args:argparse.Namespace):
             if settings is not None:
                 sim_world.apply_settings(settings)
             destroy_all_sensors(sim_world)
+
 
 def main():
     args = get_args()
@@ -360,22 +369,23 @@ def main():
         if show:
             viewer = multiprocessing.Process(
                     target=run_pygame,
-                    args=(log_dir, "view_game" ,ego_role_name, carla_host, carla_port, 720, 480))
+                    args=(log_dir, "view_game", ego_role_name, carla_host, 
+                          carla_port, 720, 480))
             viewer.start()
 
         control_sensor = multiprocessing.Process(
                             target=run_control,
                             args=(log_dir, "apollo_control",
-                                ego_role_name, carla_host,
-                                carla_port, apollo_host, apollo_port))
+                                  ego_role_name, carla_host,
+                                  carla_port, apollo_host, apollo_port))
         control_sensor.start()
         print("control_sensor started")
         sensors_config = multiprocessing.Process(
                             target=run_sensors,
                             args=(log_dir, "carla_sensors",
-                                ego_role_name, carla_host,
-                                carla_port, apollo_host, apollo_port,
-                                sensor_config))
+                                  ego_role_name, carla_host,
+                                  carla_port, apollo_host, apollo_port,
+                                  sensor_config))
         sensors_config.start()
         print("other sensors started")
 
@@ -391,6 +401,7 @@ def main():
             settings.fixed_delta_seconds = None
             sim_world.apply_settings(settings)
             destroy_all_sensors(sim_world)
+
 
 if __name__ == '__main__':
     main()

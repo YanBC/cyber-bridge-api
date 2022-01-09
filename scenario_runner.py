@@ -29,6 +29,7 @@ import sys
 import time
 import json
 import pkg_resources
+import logging
 
 import carla
 
@@ -113,6 +114,7 @@ class ScenarioRunner(object):
         signal.signal(signal.SIGTERM, self._signal_handler)
 
         self._start_wall_time = datetime.now()
+        logging.basicConfig(level=logging.INFO)
 
     def destroy(self):
         """
@@ -200,6 +202,16 @@ class ScenarioRunner(object):
             self.agent_instance.destroy()
             self.agent_instance = None
 
+    def _show_ego_vehicle_basic(self):
+        logging.debug("Total ego vehicles=%d", len(self.ego_vehicles))
+        print("num of ego vehicles={}".format(len(self.ego_vehicles)))
+        for i, _ in enumerate(self.ego_vehicles):
+            logging.info("Ego vehicle[{}] Length={}, Width={}, Hight={}".format(
+                i,
+                self.ego_vehicles[i].bounding_box.extent.x * 2,
+                self.ego_vehicles[i].bounding_box.extent.y * 2,
+                self.ego_vehicles[i].bounding_box.extent.z * 2))
+
     def _prepare_ego_vehicles(self, ego_vehicles):
         """
         Spawn or update the ego vehicles
@@ -230,9 +242,10 @@ class ScenarioRunner(object):
                         break
 
             for i, _ in enumerate(self.ego_vehicles):
-                self.ego_vehicles[i].set_transform(ego_vehicles[i].transform)
+                self.ego_vehicles[i].set_transform(ego_vehicles[i].transform)                
                 CarlaDataProvider.register_actor(self.ego_vehicles[i])
 
+        self._show_ego_vehicle_basic()
         # sync state
         if CarlaDataProvider.is_sync_mode():
             self.world.tick()
@@ -442,9 +455,10 @@ class ScenarioRunner(object):
         result = False
 
         # Load the scenario configurations provided in the config file
-        scenario_configurations = ScenarioConfigurationParser.parse_scenario_configuration(
-            self._args.scenario,
-            self._args.configFile)
+        # scenario_configurations = ScenarioConfigurationParser.parse_scenario_configuration(
+        #     self._args.scenario,
+        #     self._args.configFile)
+        scenario_configurations = self._args.scenario_configurations
         if not scenario_configurations:
             print("Configuration for scenario {} cannot be found!".format(self._args.scenario))
             return result
@@ -520,7 +534,7 @@ class ScenarioRunner(object):
         return result
 
 
-def scenario_run(arguments:argparse.Namespace):
+def scenario_run(arguments: argparse.Namespace):
 
     if arguments is None:
          raise RuntimeError("Error: arguments is None ")

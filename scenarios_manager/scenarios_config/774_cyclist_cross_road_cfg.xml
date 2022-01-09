@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<scenarios>    
+    <scenario name="CyclistCrossing" type="CyclistCrossingWithStop" town="Town03">
+        <ego_vehicle x="110" y="129" z="1" yaw="180" model="vehicle.lincoln.mkz2017"/>
+        <destination x="20" y="129" />
+    </scenario>
+</scenarios>

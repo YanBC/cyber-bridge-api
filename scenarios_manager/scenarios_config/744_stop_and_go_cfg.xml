@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<scenarios>    
+    <scenario name="StopAndGo" type="StopAndGo" town="Town03">
+        <ego_vehicle x="120" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
+        <other_actor x="80" y="193" z="-100" yaw="180" model="vehicle.tesla.model3" />
+        <destination x="20" y="193" />
+    </scenario>
+</scenarios>
