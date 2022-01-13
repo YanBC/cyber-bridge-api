@@ -213,3 +213,4 @@ cyber/**/*.py
 modules/**/*.py
 trash/
 logs/
+.vscode/
