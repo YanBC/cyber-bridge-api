@@ -535,9 +535,8 @@ class ScenarioRunner(object):
 
 
 def scenario_run(arguments: argparse.Namespace):
-
     if arguments is None:
-         raise RuntimeError("Error: arguments is None ")
+        raise RuntimeError("Error: arguments is None ")
 
     if arguments.list:
         print("Currently the following scenarios are supported:")
@@ -582,6 +581,7 @@ def scenario_run(arguments: argparse.Namespace):
             scenario_runner.destroy()
             del scenario_runner
     return not result
+
 
 def main():
     """
@@ -682,6 +682,7 @@ def main():
             scenario_runner.destroy()
             del scenario_runner
     return not result
+
 
 if __name__ == "__main__":
     sys.exit(main())
