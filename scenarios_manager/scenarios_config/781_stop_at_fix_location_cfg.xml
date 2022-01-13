@@ -2,6 +2,6 @@
 <scenarios>    
     <scenario name="StopAtFixedLocation" type="StopAtFixedLocation" town="Town03">
         <ego_vehicle x="120" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <destination x="70" y="193" />
+        <destination x="10" y="193" />
     </scenario>
 </scenarios>

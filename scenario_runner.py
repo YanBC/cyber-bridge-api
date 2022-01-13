@@ -242,7 +242,7 @@ class ScenarioRunner(object):
                         break
 
             for i, _ in enumerate(self.ego_vehicles):
-                self.ego_vehicles[i].set_transform(ego_vehicles[i].transform)                
+                self.ego_vehicles[i].set_transform(ego_vehicles[i].transform)
                 CarlaDataProvider.register_actor(self.ego_vehicles[i])
 
         self._show_ego_vehicle_basic()
@@ -315,7 +315,7 @@ class ScenarioRunner(object):
     def _load_and_wait_for_world(self, town, ego_vehicles=None):
         """
         Load a new CARLA world and provide data to CarlaDataProvider
-        """ 
+        """
 
         if self._args.reloadWorld:
             self.world = self.client.load_world(town)
@@ -360,7 +360,7 @@ class ScenarioRunner(object):
 
         if CarlaDataProvider.get_map().name != town and CarlaDataProvider.get_map().name != "OpenDriveMap":
             print("The CARLA server uses the wrong map: {}".format(CarlaDataProvider.get_map().name))
-            print("Scenario requires to use map: {}".format(town))   
+            print("Scenario requires to use map: {}".format(town))
             return False
 
         return True

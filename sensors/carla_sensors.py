@@ -6,12 +6,19 @@ import carla
 import math
 import weakref
 
+
+class CarlaSensor:
+    def destroy(self):
+        raise NotImplementedError
+
+
 # ===================================
 # -- GnssSensor ---------------------
 # ===================================
 rear_to_center_in_x = -1.4224
 
-class GnssSensor(object):
+
+class GnssSensor(CarlaSensor):
     def __init__(self, parent_actor, location=None):
         if location is None:
             location = carla.Location(x=rear_to_center_in_x)
@@ -50,7 +57,7 @@ class GnssSensor(object):
 # ===================================
 # -- IMUSensor ----------------------
 # ===================================
-class IMUSensor(object):
+class IMUSensor(CarlaSensor):
     def __init__(self, parent_actor):
         self.sensor = None
         self._parent = parent_actor
@@ -93,6 +100,7 @@ class IMUSensor(object):
 # ===================================
 _gnss_sensor = None
 _imu_sensor = None
+
 
 def get_GnssSensor(player: carla.Vehicle):
     global _gnss_sensor

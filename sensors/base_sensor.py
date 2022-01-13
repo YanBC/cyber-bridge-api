@@ -1,6 +1,7 @@
 import time
 import carla
 from cyber_bridge.base_encoder import BaseEncoder
+from sensors.carla_sensors import CarlaSensor
 from modules.common.proto.header_pb2 import Header
 
 
@@ -14,7 +15,7 @@ class Sensor:
     def __init__(
             self,
             ego_vehicle: carla.Vehicle,
-            carla_sensor: carla.Sensor = None,
+            carla_sensor: CarlaSensor = None,
             freq: float = -1.,
             name: str = "") -> None:
         self._freq = freq
@@ -62,8 +63,7 @@ class Sensor:
 
     def destroy(self):
         if self.carla_sensor is not None:
-            self.carla_sensor.sensor.stop()
-            self.carla_sensor.sensor.destroy()
+            self.carla_sensor.destroy()
         self.carla_sensor = None
 
     def _get_cyber_header(self):
