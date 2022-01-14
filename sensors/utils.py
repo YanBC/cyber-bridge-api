@@ -40,13 +40,6 @@ class SensorManager:
 def updater(s: Sensor, e: Event):
     freq = s.get_frequency()
     t = 1 / 100 if freq <= 0 else 1 / freq
-    # while True:
-    #     try:
-    #         if t is not None:
-    #             time.sleep(t)
-    #         s.update()
-    #     except KeyboardInterrupt:
-    #         break
     while True:
         try:
             if t is not None and not e.isSet():

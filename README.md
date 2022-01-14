@@ -2,7 +2,7 @@
 File tree:
 ```bash
 .
-├── carla_run_vehicle.py        # main script
+├── main.py                     # main script
 ├── compile_proto.sh            # script for compiling proto files
 ├── cyber                       # proto files from Apollo Autopilot
 ├── cyber_bridge                # codes for communicating with Apollo cyber_bridge
