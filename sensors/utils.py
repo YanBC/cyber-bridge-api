@@ -27,7 +27,8 @@ class SensorManager:
     def send_apollo_msgs(self) -> bool:
         msgList = []
         for s in self.sensors:
-            if s.isUpdated:
+            # print(f"{s.get_name()}: {s.isUpdated()}")
+            if s.isUpdated():
                 msg = s.get_bytes()
                 if len(msg) == 0:
                     continue
@@ -107,7 +108,7 @@ def setup_sensors(
             updater_list.append(t)
         else:  # routing request sent only once
             sensor.update()
-            logging.info("Sensor into={}{}".format(sensor, sensor._updated))
+            logging.info("Sensor into={}{}".format(sensor, sensor.isUpdated()))
     for t in updater_list:
         t.start()
 
