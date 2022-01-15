@@ -44,10 +44,5 @@
         "name": "clock",
         "type": "ClockSensor",
         "frequency": -1.0
-    },
-    {
-        "name": "routingrequest",
-        "type": "RoutingReq",
-        "frequency": 1.0
     }
 ]

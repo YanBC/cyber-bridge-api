@@ -1,4 +1,3 @@
-from math import log
 from threading import (Thread, Event)
 import carla
 from typing import List
@@ -8,7 +7,6 @@ from cyber_bridge.cyber_bridge_client import CyberBridgeClient
 from sensors.base_sensor import Sensor
 
 from sensors import *
-from sensors.routing_request import RoutingReq, get_RoutingReq
 from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
@@ -58,8 +56,7 @@ def setup_sensors(
                 carla_port: int,
                 apollo_host: str,
                 apollo_port: int,
-                sensor_config: dict,
-                routing_request: dict):
+                sensor_config: dict):
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
     sim_world = client.get_world()
@@ -91,8 +88,6 @@ def setup_sensors(
             tmp_sensor = get_Obstacles(player, config)
         elif sensor_type == "ClockSensor":
             tmp_sensor = get_ClockSensor(player, config)
-        elif sensor_type == "RoutingReq":
-            tmp_sensor = get_RoutingReq(player, config, routing_request)
 
         logging.info(f"{tmp_sensor.get_name()} created")
         sensor_list.append(tmp_sensor)
@@ -103,12 +98,8 @@ def setup_sensors(
     updater_list = []
     e = Event()
     for sensor in sensor_list:
-        if not isinstance(sensor, RoutingReq):
-            t = Thread(target=updater, args=(sensor, e))
-            updater_list.append(t)
-        else:  # routing request sent only once
-            sensor.update()
-            logging.info("Sensor into={}{}".format(sensor, sensor.isUpdated()))
+        t = Thread(target=updater, args=(sensor, e))
+        updater_list.append(t)
     for t in updater_list:
         t.start()
 

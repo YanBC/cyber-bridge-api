@@ -3,3 +3,4 @@ pygame
 numpy
 networkx
 transforms3d
+websocket-client

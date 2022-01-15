@@ -9,9 +9,10 @@ import carla
 from sensors.apollo_control import listen_and_apply_control
 from sensors.utils import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist, load_json
+from utils import is_actor_exist, load_json, get_vehicle_by_role_name
 from scenario_runner import scenario_run
 from scenario_parser import ScenarioConfigurationParser as SrCfgP
+from dreamview_api import Connection as DreamviewConn
 
 
 def destroy_all_sensors(world):
@@ -82,6 +83,11 @@ def get_args():
         type=int,
         help='apollo port to connect to (default: 9090)')
     argparser.add_argument(
+        '--dreamview-port',
+        default=8888,
+        type=int,
+        help='apollo dreamview port (default: 8888)')
+    argparser.add_argument(
         '--adc',
         default='hero',
         help='ego vehicle role name')
@@ -109,11 +115,13 @@ def get_args():
                            '(*.json)')
     args = argparser.parse_args()
 
-    ac_args = argparse.Namespace()  # communication with apollo and carla args
+    # communication with apollo and carla args
+    ac_args = argparse.Namespace()
     ac_args.carla_host = args.carla_host
     ac_args.carla_port = args.carla_port
     ac_args.apollo_host = args.apollo_host
     ac_args.apollo_port = args.apollo_port
+    ac_args.dreamview_port = args.dreamview_port
     ac_args.adc = args.adc
     ac_args.show = args.show
     ac_args.timeout = args.timeout
@@ -141,7 +149,8 @@ def get_args():
         ac_args.dst_y = scenario_configurations[0].destination.y
         ac_args.dst_z = scenario_configurations[0].destination.z
 
-    sr_args = {**sr_host_dict, **sr_config}   # scenario runner args
+    # scenario runner args
+    sr_args = {**sr_host_dict, **sr_config}
     return ac_args, argparse.Namespace(**sr_args)
 
 
@@ -149,6 +158,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
     # logging.basicConfig(level=logging.INFO)
     apollo_host = ac_args.apollo_host
     apollo_port = ac_args.apollo_port
+    dreamview_port = ac_args.dreamview_port
     carla_host = ac_args.carla_host
     carla_port = ac_args.carla_port
     ego_role_name = ac_args.adc
@@ -156,11 +166,9 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
     carla_timeout = ac_args.timeout
     sensor_config = load_json(ac_args.sensor_config)
     log_dir = ac_args.log_dir
-
-    routing_req = dict()
-    routing_req['x'] = ac_args.dst_x
-    routing_req['y'] = ac_args.dst_y
-    routing_req['z'] = ac_args.dst_z
+    dst_x = ac_args.dst_x
+    dst_y = ac_args.dst_y
+    dst_z = ac_args.dst_z
 
     sim_world = None
     child_pid_file = open("pids.txt", "w")
@@ -169,6 +177,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         client.set_timeout(carla_timeout)
 
         sim_world = client.get_world()
+        sim_map = sim_world.get_map()
         settings = sim_world.get_settings()
         settings.synchronous_mode = False
         settings.fixed_delta_seconds = 0.02
@@ -180,15 +189,19 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         scenario_runner.start()
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
-        # wait for scenario runner
-        while not is_actor_exist(sim_world, role_name=ego_role_name):
-            time.sleep(1)
+        player, _ = get_vehicle_by_role_name(
+                __name__, sim_world, ego_role_name)
+        dreamview_conn = DreamviewConn(apollo_host, dreamview_port)
+        start_waypoint = sim_map.get_waypoint(player.get_location())
+        end_waypoint = sim_map.get_waypoint(
+                carla.Location(x=dst_x, y=dst_y, z=dst_z))
+        dreamview_conn.set_destination(start_waypoint, end_waypoint)
 
         if show:
             viewer = multiprocessing.Process(
                     target=run_pygame,
                     args=(log_dir, "view_game", ego_role_name, carla_host,
-                          carla_port, 720, 480))
+                          carla_port, 1080, 720))
             viewer.start()
             child_pid_file.write(f"viewer pid: {viewer.pid}\n")
 
@@ -204,7 +217,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
                             args=(log_dir, "carla_sensors",
                                   ego_role_name, carla_host,
                                   carla_port, apollo_host, apollo_port,
-                                  sensor_config, routing_req))
+                                  sensor_config))
         sensors_config.start()
         child_pid_file.write(f"sensors_config pid: {sensors_config.pid}\n")
 
