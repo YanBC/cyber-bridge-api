@@ -23,6 +23,8 @@ File tree:
 
 ## How to run
 ```bash
+# 0. good programmers start counting at zero
+git clone --recurse-submodules git@gitlab.quyan.info:the-flying-hoyshanist/simulator.git
 # 1. cd to project root
 cd simulator/
 # 2. run setup script
