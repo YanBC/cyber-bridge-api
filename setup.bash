@@ -1,0 +1,4 @@
+TOP_DIR="$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd -P)"
+SCENARIO_RUNNER="${TOP_DIR}/scenario_runner"
+export SCENARIO_RUNNER_ROOT=${SCENARIO_RUNNER}
+export PYTHONPATH=${SCENARIO_RUNNER}:${PYTHONPATH}

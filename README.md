@@ -2,21 +2,35 @@
 File tree:
 ```bash
 .
-├── main.py                     # main script
 ├── compile_proto.sh            # script for compiling proto files
 ├── cyber                       # proto files from Apollo Autopilot
 ├── cyber_bridge                # codes for communicating with Apollo cyber_bridge
 ├── Dockerfile                  # Dockerfile
+├── dreamview_api.py            # Apollo Dreamview websocket api
+├── main.py                     # main script
 ├── modules                     # proto files from Apollo Autopilot
 ├── opendrive                   # opendrive maps
 ├── pygame_viewer.py            # pygame viewer sub-process
 ├── README.md                   # this README.md
 ├── requirements.txt            # required python packages
 ├── scenario_configs            # scenario configurations, unused for now
-├── scenario_runner.py          # scenario_runner.py from scenario runner project
+├── scenario_runner             # scenario_runner submodule
 ├── sensor_configs              # sensors configurations
 ├── sensors                     # codes for sensors
+├── setup.bash                  # setup environment variables
 └── utils.py                    # common utilities codes
+```
+
+## How to run
+```bash
+# 1. cd to project root
+cd simulator/
+# 2. run setup script
+bash setup.bash
+# 3. show usage
+python main.py -h
+# 4. run main.py script
+python main.py --carla-host <carla.server.ip.addr> --apollo-host <apollo.ip.addr> --configFile scenario_configs/781_stop_at_fix_location_cfg.json
 ```
 
 

@@ -11,7 +11,8 @@ from sensors.utils import setup_sensors
 from pygame_viewer import view_game
 from utils import is_actor_exist, load_json, get_vehicle_by_role_name
 from scenario_runner import scenario_run
-from scenario_parser import ScenarioConfigurationParser as SrCfgP
+from srunner.tools.scenario_parser \
+    import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import Connection as DreamviewConn
 
 
@@ -25,7 +26,7 @@ def destroy_all_sensors(world):
 
 def logging_wrapper(func):
     @functools.wraps(func)
-    def wrapper(log_dir:str, name:str, *args, **kwargs):
+    def wrapper(log_dir: str, name: str, *args, **kwargs):
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
         timestr = time.strftime("%Y%m%d-%H%M%S")
