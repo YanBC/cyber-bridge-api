@@ -76,7 +76,19 @@ def get_actor_shape(a: carla.Actor) -> Tuple[float]:
     # length = v_max.x - v_min.x
     # width = v_max.y - v_min.y
     # height = v_max.z = v_min.z
-    length =numpy.clip(2 * bbox.extent.x, 0.2, 3)
+    length = numpy.clip(2 * bbox.extent.x, 0.2, 3)
     width = numpy.clip(2 * bbox.extent.y, 0.2, 3)
     height = numpy.clip(2 * bbox.extent.z, 0.2, 3) # carla 0.9.13 has issue on bounding box of two wheels actor
     return (length, width, height)
+
+
+def longitudinal_offset(wp: carla.Waypoint, offset):
+    position_yaw = wp.transform.rotation.yaw
+    offset_angel = position_yaw
+    offset_location = carla.Location(
+        offset * math.cos(math.radians(offset_angel)),
+        offset * math.sin(math.radians(offset_angel)))
+
+    print("offset:{},\norigin:{}".format(offset_location, wp.transform.location))
+
+    return wp.transform.location + offset_location
