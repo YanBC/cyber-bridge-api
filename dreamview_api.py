@@ -1,6 +1,7 @@
 from websocket import create_connection
 import json
 import carla
+from utils import longitudinal_offset
 
 
 class Connection:
@@ -23,7 +24,7 @@ class Connection:
 
         return 190 if ok
         '''
-        start_location = start_pos.transform.location
+        start_location = longitudinal_offset(start_pos, -3)
         end_location = end_pos.transform.location
 
         json_msg = json.dumps({
