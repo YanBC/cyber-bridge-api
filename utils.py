@@ -1,3 +1,4 @@
+import logging
 import time
 import math
 import json
@@ -82,13 +83,10 @@ def get_actor_shape(a: carla.Actor) -> Tuple[float]:
     return (length, width, height)
 
 
-def longitudinal_offset(wp: carla.Waypoint, offset):
+def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location():
     position_yaw = wp.transform.rotation.yaw
     offset_angel = position_yaw
     offset_location = carla.Location(
         offset * math.cos(math.radians(offset_angel)),
         offset * math.sin(math.radians(offset_angel)))
-
-    print("offset:{},\norigin:{}".format(offset_location, wp.transform.location))
-
     return wp.transform.location + offset_location

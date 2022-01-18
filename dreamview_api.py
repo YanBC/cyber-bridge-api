@@ -3,6 +3,7 @@ import json
 import carla
 from utils import longitudinal_offset
 
+
 class Connection:
     def __init__(
             self,
