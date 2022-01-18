@@ -83,7 +83,7 @@ def get_actor_shape(a: carla.Actor) -> Tuple[float]:
     return (length, width, height)
 
 
-def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location():
+def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location:
     position_yaw = wp.transform.rotation.yaw
     offset_angel = position_yaw
     offset_location = carla.Location(
