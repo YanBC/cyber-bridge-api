@@ -27,11 +27,13 @@ File tree:
 git clone --recurse-submodules git@gitlab.quyan.info:the-flying-hoyshanist/simulator.git
 # 1. cd to project root
 cd simulator/
-# 2. run setup script
-bash setup.bash
-# 3. show usage
+# 2. generate protobuf files
+bash compile_proto.sh
+# 3. source setup script
+source setup.bash
+# 4. show usage
 python main.py -h
-# 4. run main.py script
+# 5. run main.py script
 python main.py --carla-host <carla.server.ip.addr> --apollo-host <apollo.ip.addr> --configFile scenario_configs/781_stop_at_fix_location_cfg.json
 ```
 
@@ -168,14 +170,16 @@ This sensor outputs simulated time to CyberRT as clock messages.
 ## Using Docker
 Build docker image
 ```bash
-docker build -t cyber-bridge-api:0.9.11 .
+git clone --recurse-submodules git@gitlab.quyan.info:the-flying-hoyshanist/simulator.git
+cd ./simulator
+docker build -t simulator-0.9.11:v0.1 .
 ```
 
 Start docker container
 ```bash
 docker run -it -d \
 -v /tmp/.X11-unix/:/tmp/.X11-unix \
-cyber-bridge-api:0.9.11 \
+simulator-0.9.11:v0.1 \
 bash
 ```
 
@@ -203,7 +207,3 @@ python3 config.py --no-rendering
 ```
 
 See https://carla.readthedocs.io/en/0.9.11/adv_rendering_options/ for details.
-
-### env setting
-export SCENARIO_RUNNER_ROOT="/third-parties/scenario_runner/"
-
