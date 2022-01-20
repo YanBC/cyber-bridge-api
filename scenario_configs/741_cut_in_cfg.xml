@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <scenarios>    
     <scenario name="CutInUser" type="CutInUser" town="Town03">
-        <ego_vehicle x="120" y="196.7" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <other_actor x="90" y="193" z="-100" yaw="180" model="vehicle.tesla.model3" />
+        <ego_vehicle x="140" y="196.7" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
+        <other_actor x="100" y="193" z="-100" yaw="180" model="vehicle.tesla.model3" />
         <destination x="20" y="196.7" />
     </scenario>
 </scenarios>

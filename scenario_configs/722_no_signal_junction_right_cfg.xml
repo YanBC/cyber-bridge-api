@@ -3,6 +3,6 @@
     <scenario name="NoSignalJunctionCrossingTurnRight" type="NoSignalJunctionCrossingTurnRight" town="Town03">
         <ego_vehicle x="-74.32" y="-90" z="0.5" yaw="270" model="vehicle.lincoln.mkz2017" />
         <other_actor x="-105" y="-136" z="0.5" yaw="0" model="vehicle.tesla.model3" />
-        <destination x="-45.81" y="-136.05" />
+        <destination x="40" y="-133.05" />
     </scenario>
 </scenarios>
