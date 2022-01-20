@@ -1,0 +1,12 @@
+{
+    "mode": "Mkz Lgsvl",
+    "modules":
+    [
+        "Routing",
+        "Planning",
+        "Localization",
+        "Prediction",
+        "Transform",
+        "Control"
+    ]
+}
