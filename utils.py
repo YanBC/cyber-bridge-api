@@ -1,4 +1,3 @@
-import logging
 import time
 import math
 import json
@@ -61,6 +60,12 @@ def load_json(filepath: str) -> dict:
 def load_json_as_object(filepath: str) -> object:
     data_dict = load_json(filepath)
     return SimpleNamespace(**data_dict)
+
+
+def pretty_json(data: str) -> str:
+    json_data = json.loads(data)
+    ret = json.dumps(json_data, indent=4, sort_keys=True)
+    return ret
 
 
 # Available on carla.Vehicle, carla.Walker

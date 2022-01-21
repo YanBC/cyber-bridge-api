@@ -5,6 +5,8 @@ import os
 import functools
 import logging
 
+from matplotlib.font_manager import json_load
+
 import carla
 from sensors.apollo_control import listen_and_apply_control
 from sensors.utils import setup_sensors
@@ -13,7 +15,7 @@ from utils import is_actor_exist, load_json, get_vehicle_by_role_name
 from scenario_runner import scenario_run
 from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
-from dreamview_api import Connection as DreamviewConn
+from dreamview_api import setup_apollo, reset_apollo
 
 
 def destroy_all_sensors(world):
@@ -109,6 +111,10 @@ def get_args():
         '--log-dir',
         default="./logs",
         help='where to store log files')
+    argparser.add_argument(
+        '--apollo-config',
+        default='./apollo_configs/pnc_testing.json',
+        help='path to apollo config file (default: apollo_configs/pnc_testing.json)')
     argparser.add_argument('--configFile',
                            default='./scenario_configs/'
                            '743_borrow_lane_cfg.json',
@@ -128,6 +134,9 @@ def get_args():
     ac_args.timeout = args.timeout
     ac_args.sensor_config = args.sensor_config
     ac_args.log_dir = args.log_dir
+    apollo_config = json_load(args.apollo_config)
+    ac_args.dreamview_mode = apollo_config['mode']
+    ac_args.apollo_modules = apollo_config['modules']
 
     # sr_host_keys = ['host', 'port', 'timeout']
     sr_host_dict = dict()
@@ -149,6 +158,10 @@ def get_args():
         ac_args.dst_x = scenario_configurations[0].destination.x
         ac_args.dst_y = scenario_configurations[0].destination.y
         ac_args.dst_z = scenario_configurations[0].destination.z
+        ego = scenario_configurations[0].ego_vehicles[0]
+        ac_args.srt_x = ego.transform.location.x
+        ac_args.srt_y = ego.transform.location.y
+        ac_args.srt_z = ego.transform.location.z
 
     # scenario runner args
     sr_args = {**sr_host_dict, **sr_config}
@@ -170,6 +183,23 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
     dst_x = ac_args.dst_x
     dst_y = ac_args.dst_y
     dst_z = ac_args.dst_z
+    srt_x = ac_args.srt_x
+    srt_y = ac_args.srt_y
+    srt_z = ac_args.srt_z
+    dreamview_mode = ac_args.dreamview_mode
+    apollo_modules = ac_args.apollo_modules
+    kv_map_names = load_json("./kv_mappings/maps.json")
+    kv_vehicle_names = load_json("./kv_mappings/vehicles.json")
+    carla_map = sr_args.scenario_configurations[0].town
+    carla_vehicle = sr_args.scenario_configurations[0].ego_vehicles[0].model
+    apollo_map = kv_map_names.get(carla_map, None)
+    if apollo_map is None:
+        logging.error(f"No Apollo map for {carla_map}")
+        return
+    apollo_vehicle = kv_vehicle_names.get(carla_vehicle, None)
+    if apollo_vehicle is None:
+        logging.error(f"No Apollo vehicle for {apollo_vehicle}")
+        return
 
     sim_world = None
     child_pid_file = open("pids.txt", "w")
@@ -184,19 +214,30 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         settings.fixed_delta_seconds = 0.02
         sim_world.apply_settings(settings)
 
+        start_waypoint = sim_map.get_waypoint(
+            carla.Location(x=srt_x, y=srt_y, z=srt_z))
+        end_waypoint = sim_map.get_waypoint(
+            carla.Location(x=dst_x, y=dst_y, z=dst_z))
+        if not setup_apollo(
+                apollo_host,
+                dreamview_port,
+                dreamview_mode,
+                apollo_map,
+                apollo_vehicle,
+                apollo_modules,
+                start_waypoint,
+                end_waypoint):
+            logging.error("Apollo setup fail. Exiting ...")
+            return
+
         scenario_runner = multiprocessing.Process(
                         target=run_scenario,
                         args=(log_dir, "scenario_runner", sr_args))
         scenario_runner.start()
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
-        player, _ = get_vehicle_by_role_name(
-                __name__, sim_world, ego_role_name)
-        dreamview_conn = DreamviewConn(apollo_host, dreamview_port)
-        start_waypoint = sim_map.get_waypoint(player.get_location())
-        end_waypoint = sim_map.get_waypoint(
-                carla.Location(x=dst_x, y=dst_y, z=dst_z))
-        dreamview_conn.set_destination(start_waypoint, end_waypoint)
+        # wait for ego to be created
+        get_vehicle_by_role_name(__name__, sim_world, ego_role_name)
 
         if show:
             viewer = multiprocessing.Process(
@@ -229,6 +270,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
             time.sleep(1)
 
     finally:
+        reset_apollo(apollo_host, dreamview_port, apollo_modules)
         if not child_pid_file.closed:
             child_pid_file.close()
         if sim_world is not None:
