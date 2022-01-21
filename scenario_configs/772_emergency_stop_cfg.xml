@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <scenarios>    
     <scenario name="FollowLeadingVehicleWithDecelerate" type="FollowLeadingVehicleWithDecelerate" town="Town03">
-        <ego_vehicle x="120" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <destination x="30" y="193" />
+        <ego_vehicle x="154" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
+        <destination x="15" y="193" />
     </scenario>
 </scenarios>
