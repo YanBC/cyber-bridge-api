@@ -79,7 +79,7 @@ class IMUSensor(CarlaSensor):
         self = weak_self()
         if not self:
             return
-        limits = (math.radians(-99.9), math.radians(99.9))
+        limits = (-99.9, 99.9)
         self.accelerometer = (
             max(limits[0], min(limits[1], sensor_data.accelerometer.x)),
             max(limits[0], min(limits[1], sensor_data.accelerometer.y)),

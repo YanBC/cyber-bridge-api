@@ -4,8 +4,7 @@ import multiprocessing
 import os
 import functools
 import logging
-
-from matplotlib.font_manager import json_load
+import pygame
 
 import carla
 from sensors.apollo_control import listen_and_apply_control
@@ -120,6 +119,14 @@ def get_args():
                            '743_borrow_lane_cfg.json',
                            help='Provide a scenario configuration file '
                            '(*.json)')
+    argparser.add_argument("--fps",
+                            type=int,
+                            default=50,
+                            help="Carla server update frequency, default to 50. "
+                            "Set it to -1 if carla server should run in asynchronous mode. "
+                            "This flag is incompatible with --show and takes precedence "
+                            "when both are specified. Also note that this flag is "
+                            "best-effort-only. The actual fps would be depends on the hardware")
     args = argparser.parse_args()
 
     # communication with apollo and carla args
@@ -134,9 +141,10 @@ def get_args():
     ac_args.timeout = args.timeout
     ac_args.sensor_config = args.sensor_config
     ac_args.log_dir = args.log_dir
-    apollo_config = json_load(args.apollo_config)
+    apollo_config = load_json(args.apollo_config)
     ac_args.dreamview_mode = apollo_config['mode']
     ac_args.apollo_modules = apollo_config['modules']
+    ac_args.fps = args.fps
 
     # sr_host_keys = ['host', 'port', 'timeout']
     sr_host_dict = dict()
@@ -200,6 +208,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
     if apollo_vehicle is None:
         logging.error(f"No Apollo vehicle for {apollo_vehicle}")
         return
+    fps = ac_args.fps
 
     sim_world = None
     child_pid_file = open("pids.txt", "w")
@@ -210,8 +219,9 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         sim_world = client.get_world()
         sim_map = sim_world.get_map()
         settings = sim_world.get_settings()
-        settings.synchronous_mode = False
+        settings.synchronous_mode = True
         settings.fixed_delta_seconds = 0.02
+        settings.no_rendering_mode = True
         sim_world.apply_settings(settings)
 
         start_waypoint = sim_map.get_waypoint(
@@ -239,13 +249,15 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         # wait for ego to be created
         get_vehicle_by_role_name(__name__, sim_world, ego_role_name)
 
-        if show:
+        if show and fps < 0:
             viewer = multiprocessing.Process(
                     target=run_pygame,
                     args=(log_dir, "view_game", ego_role_name, carla_host,
                           carla_port, 1080, 720))
             viewer.start()
             child_pid_file.write(f"viewer pid: {viewer.pid}\n")
+        else:
+            pygame.init()
 
         control_sensor = multiprocessing.Process(
                             target=run_control,
@@ -264,10 +276,16 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         child_pid_file.write(f"sensors_config pid: {sensors_config.pid}\n")
 
         child_pid_file.close()
+        clock = pygame.time.Clock()
         while True:
             if not is_actor_exist(sim_world, role_name=ego_role_name):
                 break
-            time.sleep(1)
+            if fps < 0:
+                time.sleep(1)
+            else:
+                clock.tick_busy_loop(fps)
+                sim_world.tick()
+
 
     finally:
         reset_apollo(apollo_host, dreamview_port, apollo_modules)
@@ -279,6 +297,8 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
             settings.fixed_delta_seconds = None
             sim_world.apply_settings(settings)
             destroy_all_sensors(sim_world)
+        if not show:
+            pygame.quit()
 
 
 if __name__ == "__main__":
