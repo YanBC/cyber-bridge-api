@@ -1,4 +1,5 @@
 import argparse
+from telnetlib import EC
 import time
 import multiprocessing
 import os
@@ -116,9 +117,9 @@ def get_args():
         help='path to apollo config file (default: apollo_configs/pnc_testing.json)')
     argparser.add_argument('--configFile',
                            default='./scenario_configs/'
-                           '743_borrow_lane_cfg.json',
-                           help='Provide a scenario configuration file '
-                           '(*.json)')
+                           'free_ride.json',
+                           help='Provide a scenario configuration file (*.json), '
+                           'default: scenario_configs/free_ride.json')
     argparser.add_argument("--fps",
                             type=int,
                             default=50,
@@ -163,9 +164,12 @@ def get_args():
         {'scenario_configurations': scenario_configurations})
 
     if len(scenario_configurations) > 0:
-        ac_args.dst_x = scenario_configurations[0].destination.x
-        ac_args.dst_y = scenario_configurations[0].destination.y
-        ac_args.dst_z = scenario_configurations[0].destination.z
+        try:
+            ac_args.dst_x = scenario_configurations[0].destination.x
+            ac_args.dst_y = scenario_configurations[0].destination.y
+            ac_args.dst_z = scenario_configurations[0].destination.z
+        except Exception:
+            ac_args.dst_x = ac_args.dst_y = ac_args.dst_z = None
         ego = scenario_configurations[0].ego_vehicles[0]
         ac_args.srt_x = ego.transform.location.x
         ac_args.srt_y = ego.transform.location.y
@@ -226,8 +230,11 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
 
         start_waypoint = sim_map.get_waypoint(
             carla.Location(x=srt_x, y=srt_y, z=srt_z))
-        end_waypoint = sim_map.get_waypoint(
-            carla.Location(x=dst_x, y=dst_y, z=dst_z))
+        if dst_x is not None:
+            end_waypoint = sim_map.get_waypoint(
+                carla.Location(x=dst_x, y=dst_y, z=dst_z))
+        else:
+            end_waypoint = None
         if not setup_apollo(
                 apollo_host,
                 dreamview_port,

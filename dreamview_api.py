@@ -4,6 +4,7 @@ import logging
 import carla
 from typing import List
 from utils import longitudinal_offset
+import time
 
 
 class Connection:
@@ -180,7 +181,11 @@ def setup_apollo(
             logging.error(f"{m} not available in {dreamview_mode}")
             return False
     conn.enable_modules(apollo_modules)
-    conn.set_destination(start_pos, end_pos)
+    # make sure apollo modules are set up
+    # before routing request is sent
+    time.sleep(5)
+    if end_pos is not None:
+        conn.set_destination(start_pos, end_pos)
     return True
 
 

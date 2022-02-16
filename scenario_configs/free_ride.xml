@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<scenarios>    
+    <scenario name="FreeRide" type="FreeRide" town="Town03">
+        <ego_vehicle x="150" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
+    </scenario>
+</scenarios>

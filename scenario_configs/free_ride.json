@@ -1,0 +1,23 @@
+{
+    "trafficManagerPort": "8000",
+    "trafficManagerSeed": "0",
+    "sync": false,
+    "scenario": "FreeRide",
+    "openscenario": null,
+    "openscenarioparams": null,
+    "route": null,
+    "agent": null,
+    "agentConfig": "",
+    "output": true,
+    "file": false,
+    "junit": false,
+    "json": false,
+    "outputDir": "",
+    "configFile": "./scenario_configs/free_ride.xml",
+    "debug": false,
+    "reloadWorld": false,
+    "record": "",
+    "randomize": false,
+    "repetitions": 1,
+    "waitForEgo": false
+}
