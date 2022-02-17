@@ -155,6 +155,7 @@ def get_args():
 
     scenario_configurations = []
     sr_config = load_json(args.configFile)
+    sr_config.update({'sync': False})
     sr_config.update({'list': False})
     scenario_configurations = \
         SrCfgP.parse_scenario_configuration_with_customer_param(

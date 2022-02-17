@@ -3,7 +3,6 @@ Carla native sensors support
 - All native sensors are implemented as singletons
 '''
 import carla
-import math
 import weakref
 
 

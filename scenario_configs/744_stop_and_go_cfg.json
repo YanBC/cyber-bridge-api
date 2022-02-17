@@ -1,7 +1,6 @@
 {
     "trafficManagerPort": "8000",
     "trafficManagerSeed": "0",
-    "sync": false,
     "scenario": "StopAndGo",
     "openscenario": null,
     "openscenarioparams": null,

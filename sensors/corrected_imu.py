@@ -31,13 +31,13 @@ class CorrectedImu(Sensor):
     def update(self):
         transform = self.ego_vehicle.get_transform()
 
-        self._pbCls.imu.linear_acceleration.x = self.carla_sensor.accelerometer[0]
-        self._pbCls.imu.linear_acceleration.y = -self.carla_sensor.accelerometer[1]
-        self._pbCls.imu.linear_acceleration.z = self.carla_sensor.accelerometer[2]
+        self._pbCls.imu.linear_acceleration.x = self.carla_sensor.accelerometer[1]
+        self._pbCls.imu.linear_acceleration.y = self.carla_sensor.accelerometer[0]
+        self._pbCls.imu.linear_acceleration.z = self.carla_sensor.accelerometer[2] - 9.81
 
         self._pbCls.imu.angular_velocity.x = self.carla_sensor.gyroscope[1]
         self._pbCls.imu.angular_velocity.y = self.carla_sensor.gyroscope[0]
-        self._pbCls.imu.angular_velocity.z = -self.carla_sensor.gyroscope[2]
+        self._pbCls.imu.angular_velocity.z = self.carla_sensor.gyroscope[2]
 
         self._pbCls.imu.heading = -transform.rotation.yaw - 90
 
