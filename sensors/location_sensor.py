@@ -22,14 +22,17 @@ class LocationSensor(Sensor):
         self._pbCls.pose.position.y = -transform.location.y
         self._pbCls.pose.position.z = transform.location.z
         self._pbCls.pose.linear_velocity.x = linear_vel.x
-        self._pbCls.pose.linear_velocity.y = linear_vel.y
+        self._pbCls.pose.linear_velocity.y = -linear_vel.y
         self._pbCls.pose.linear_velocity.z = linear_vel.z
+        self._pbCls.pose.linear_acceleration.x = accel.x  # East
+        self._pbCls.pose.linear_acceleration.y = -accel.y  # North
+        self._pbCls.pose.linear_acceleration.z = accel.z  # Up
         self._pbCls.pose.angular_velocity_vrf.x = angular_vel.x
         self._pbCls.pose.angular_velocity_vrf.y = angular_vel.y
         self._pbCls.pose.angular_velocity_vrf.z = angular_vel.z
-        self._pbCls.pose.linear_acceleration_vrf.x = accel.x
-        self._pbCls.pose.linear_acceleration_vrf.y = accel.y
-        self._pbCls.pose.linear_acceleration_vrf.z = accel.z
+        self._pbCls.pose.linear_acceleration_vrf.x = accel.y  # Right
+        self._pbCls.pose.linear_acceleration_vrf.y = accel.x  # Forward
+        self._pbCls.pose.linear_acceleration_vrf.z = accel.z  # Up
         self._pbCls.pose.heading = math.radians(-transform.rotation.yaw)
 
         self._pbCls.header.CopyFrom(self._get_cyber_header())

@@ -16,6 +16,7 @@ from scenario_runner import scenario_run
 from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
+from calibration_main import calibration_scenario
 
 
 def destroy_all_sensors(world):
@@ -60,6 +61,7 @@ def run_sensors(*args, **kwargs):
 
 @logging_wrapper
 def run_scenario(*args, **kwargs):
+    # return calibration_scenario()
     return scenario_run(*args, **kwargs)
 
 
@@ -155,6 +157,7 @@ def get_args():
 
     scenario_configurations = []
     sr_config = load_json(args.configFile)
+    sr_config.update({'sync': False})
     sr_config.update({'list': False})
     scenario_configurations = \
         SrCfgP.parse_scenario_configuration_with_customer_param(
