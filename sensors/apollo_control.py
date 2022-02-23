@@ -9,6 +9,8 @@ from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
+import multiprocessing
+import time
 
 
 def _emergency_stop():
@@ -41,17 +43,17 @@ class ApolloControl:
         self.control = None
 
     @staticmethod
-    def background(weak_self):
+    def background(weak_self, stop_event: threading.Event):
         self = weak_self()
-        world = self.ego_vehicle.get_world()
-        actor_type = self.ego_vehicle.type_id
-        while True:
-            if not is_actor_exist(world, actor_type=actor_type):
-                break
+        # world = self.ego_vehicle.get_world()
+        # actor_type = self.ego_vehicle.type_id
+        while not stop_event.is_set():
+            # if not is_actor_exist(world, actor_type=actor_type):
+            #     break
             pbCls_list = self.bridge.recv_pb_messages()
 
             if len(pbCls_list) == 0:
-                logging.warning("no control cmd received")
+                # logging.warning("no control cmd received")
                 # self.control = _emergency_stop()
                 self.control = None
             else:
@@ -59,13 +61,13 @@ class ApolloControl:
                 self.control = self._decoder.protobufToCarla(pbControl)
 
     @staticmethod
-    def listen(weak_self):
+    def listen(weak_self, stop_event: threading.Event):
         self = weak_self()
-        world = self.ego_vehicle.get_world()
-        actor_type = self.ego_vehicle.type_id
-        while True:
-            if not is_actor_exist(world, actor_type=actor_type):
-                break
+        # world = self.ego_vehicle.get_world()
+        # actor_type = self.ego_vehicle.type_id
+        while not stop_event.is_set():
+            # if not is_actor_exist(world, actor_type=actor_type):
+            #     break
             if self.control is None:
                 continue
             self.ego_vehicle.apply_control(self.control)
@@ -76,7 +78,8 @@ def listen_and_apply_control(
                 carla_host: str,
                 carla_port: int,
                 apollo_host: str,
-                apollo_port: int):
+                apollo_port: int,
+                stop_event: multiprocessing.Event):
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
     sim_world = client.get_world()
@@ -86,16 +89,24 @@ def listen_and_apply_control(
     sensor = ApolloControl(player, apollo_host, apollo_port)
 
     weak_self = weakref.ref(sensor)
+    t_stop_event = threading.Event()
     t1 = threading.Thread(
             target=ApolloControl.background,
-            args=(weak_self,),
+            args=(weak_self, t_stop_event),
             daemon=False)
     t2 = threading.Thread(
         target=ApolloControl.listen,
-        args=(weak_self,),
+        args=(weak_self, t_stop_event),
         daemon=False)
     t1.start()
     t2.start()
 
-    t1.join()
-    t2.join()
+    try:
+        while not stop_event.is_set():
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        t_stop_event.set()
+        t1.join()
+        t2.join()

@@ -5,6 +5,13 @@ import carla
 import numpy
 from typing import Tuple
 from types import SimpleNamespace
+import threading
+import multiprocessing
+import random
+import nacos
+from redis import Redis
+from pottery import Redlock, TooManyExtensions
+import logging
 
 
 def get_vehicle_by_role_name(
@@ -95,3 +102,108 @@ def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location:
         offset * math.cos(math.radians(offset_angel)),
         offset * math.sin(math.radians(offset_angel)))
     return wp.transform.location + offset_location
+
+
+#######################
+# service discovery
+#######################
+LEASE_SERVICE_NAME = "simulator:lease"
+APOLLO_SERVICE_NAME = "simulator:apollo"
+CARLA_SERVICE_NAME = "simulator:carla"
+
+
+def hovor_resource(
+        stop_event: multiprocessing.Event,
+        redlock: Redlock):
+    while not stop_event.wait(1):
+        if 1 < redlock.locked() < 5:
+            try:
+                redlock.extend()
+            except TooManyExtensions:
+                logging.error("lease expires")
+                break
+    stop_event.set()
+    redlock.release()
+
+
+def acquire_servers(
+        stop_event: multiprocessing.Event,
+        s_discovery: str,
+        duration: float = 60):
+    '''
+    Nonblocking operation
+
+    param:
+        stop_event: global control event, set if were to stop
+
+        s_discovery: service discover endpoint, format http://ip:port
+
+        duration: how long the servers are expected to be used
+                    default to 60 seconds
+    '''
+    # create nacos client
+    client = nacos.NacosClient(s_discovery)
+
+    # get lease server
+    services = client.list_naming_instance(LEASE_SERVICE_NAME)
+    services_hosts = services["hosts"]
+    if len(services_hosts) == 0:
+        raise RuntimeError("No lease services")
+    lease_redis = []
+    for lease_host in services_hosts:
+        lease_url = f"redis://{lease_host['ip']}:{lease_host['port']}"
+        lease_redis.append(Redis.from_url(lease_url))
+
+    # get available apollo servers
+    services = client.list_naming_instance(APOLLO_SERVICE_NAME)
+    services_hosts = services["hosts"]
+    if len(services_hosts) == 0:
+        raise RuntimeError("No apollo services")
+
+    random.shuffle(services_hosts)
+    for apollo_service in services_hosts:
+        apollo_id = apollo_service['instanceId']
+        apollo_lock = Redlock(
+                        key=apollo_id,
+                        masters=lease_redis,
+                        auto_release_time=duration)
+        if apollo_lock.acquire(blocking=False):
+            apollo_host = apollo_service["ip"]
+            break
+        else:
+            time.sleep(random.random())
+    else:
+        raise RuntimeError("No available apollo services")
+
+    apollo_hover_thread = threading.Thread(
+                            target=hovor_resource,
+                            args=(stop_event, apollo_lock))
+    apollo_hover_thread.start()
+
+    # get available carla servers
+    services = client.list_naming_instance(CARLA_SERVICE_NAME)
+    services_hosts = services["hosts"]
+    if len(services_hosts) == 0:
+        raise RuntimeError("No carla services")
+
+    random.shuffle(services_hosts)
+    for carla_service in services_hosts:
+        carla_id = carla_service['instanceId']
+        carla_lock = Redlock(
+                        key=carla_id,
+                        masters=lease_redis,
+                        auto_release_time=duration)
+        if carla_lock.acquire(blocking=False):
+            carla_host = carla_service["ip"]
+            break
+        else:
+            time.sleep(random.random())
+    else:
+        raise RuntimeError("No available apollo services")
+
+    carla_hover_thread = threading.Thread(
+                            target=hovor_resource,
+                            args=(stop_event, carla_lock))
+    carla_hover_thread.start()
+
+    return apollo_host, carla_host
