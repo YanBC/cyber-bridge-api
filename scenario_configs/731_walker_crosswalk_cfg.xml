@@ -1,7 +1,8 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<scenarios>    
-    <scenario name="WalkerThroughCrosswalk" town="Town03" type="WalkerThroughCrosswalk">
-        <ego_vehicle model="vehicle.tesla.model3" x="131.03" y="62.48" yaw="0" z="3"></ego_vehicle>
-        <destination x="161.9" y="62.41"></destination>
-    </scenario>
+<?xml version="1.0" ?>
+<scenarios>
+  <scenario name="WalkerThroughCrosswalk" town="Town03" type="WalkerThroughCrosswalk">
+    <ego_vehicle model="vehicle.tesla.model3" x="131.03" y="62.48" yaw="0" z="3"/>
+    <destination x="161.9" y="62.41"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

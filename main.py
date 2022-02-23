@@ -332,9 +332,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
         # wait for ego to be created
-        player, _ = get_vehicle_by_role_name(__name__, sim_world, ego_role_name)
-
-        wait_vehicle_stable(sim_world, player)
+        get_vehicle_by_role_name(__name__, sim_world, ego_role_name)
 
         if show and fps < 0:
             viewer = multiprocessing.Process(

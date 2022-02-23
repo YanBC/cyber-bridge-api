@@ -1,8 +1,8 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" ?>
 <scenarios>
-    <scenario name="SpeedLimit" town="Town03" type="SpeedLimit">
-        <ego_vehicle model="vehicle.tesla.model3" x="80" y="194" yaw="180" z="3"></ego_vehicle>
-        <destination x="20" y="194"></destination>
-    </scenario>
-    
+  <scenario name="SpeedLimit" town="Town03" type="SpeedLimit">
+    <ego_vehicle model="vehicle.tesla.model3" x="80" y="194" yaw="180" z="3"/>
+    <destination x="20" y="194"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

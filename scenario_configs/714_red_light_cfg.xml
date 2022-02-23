@@ -1,7 +1,8 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" ?>
 <scenarios>
-    <scenario name="CrossTrafficRedLight" town="Town03" type="CrossTrafficRedLight">
-        <ego_vehicle model="vehicle.tesla.model3" x="239.39" y="133.42" yaw="270" z="2.36"></ego_vehicle>
-        <destination x="239.39" y="20.42"></destination>
-    </scenario>
+  <scenario name="CrossTrafficRedLight" town="Town03" type="CrossTrafficRedLight">
+    <ego_vehicle model="vehicle.tesla.model3" x="239.39" y="133.42" yaw="270" z="2.36"/>
+    <destination x="239.39" y="20.42"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

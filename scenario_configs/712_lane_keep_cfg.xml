@@ -1,8 +1,8 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" ?>
 <scenarios>
-    <scenario name="LaneKeep" town="Town03" type="LaneKeep">
-        <ego_vehicle model="vehicle.tesla.model3" x="228.72" y="120" yaw="90" z="3"></ego_vehicle>
-        <destination x="147.33" y="193"></destination>
-    </scenario>
-   
+  <scenario name="LaneKeep" town="Town03" type="LaneKeep">
+    <ego_vehicle model="vehicle.tesla.model3" x="228.72" y="120" yaw="90" z="3"/>
+    <destination x="147.33" y="193"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

@@ -1,8 +1,9 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" ?>
 <scenarios>
-    <scenario name="NoSignalJunctionCrossingTurnRight" town="Town03" type="NoSignalJunctionCrossingTurnRight">
-        <ego_vehicle model="vehicle.tesla.model3" x="-74.32" y="-90" yaw="270" z="0.5"></ego_vehicle>
-        <other_actor model="vehicle.tesla.model3" x="-105" y="-136" yaw="0" z="0.5"></other_actor>
-        <destination x="40" y="-133.05"></destination>
-    </scenario>
+  <scenario name="NoSignalJunctionCrossingTurnRight" town="Town03" type="NoSignalJunctionCrossingTurnRight">
+    <ego_vehicle model="vehicle.tesla.model3" x="-74.32" y="-90" yaw="270" z="0.5"/>
+    <other_actor model="vehicle.tesla.model3" x="-105" y="-136" yaw="0" z="0.5"/>
+    <destination x="40" y="-133.05"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>
