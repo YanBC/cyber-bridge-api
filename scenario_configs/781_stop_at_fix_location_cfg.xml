@@ -1,8 +1,8 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>    
-    <scenario name="StopAtFixedLocation" type="StopAtFixedLocation" town="Town03">
-        <ego_vehicle x="150" y="193" z="3" yaw="180" model="vehicle.tesla.model3" />
-        <!-- <destination x="20" y="193" /> -->
-        <destination x="175" y="193" />
+    <scenario name="StopAtFixedLocation" town="Town03" type="StopAtFixedLocation">
+        <ego_vehicle model="vehicle.tesla.model3" x="150" y="193.15" yaw="180" z="3"></ego_vehicle>
+        <destination x="20" y="193"></destination>
+        
     </scenario>
 </scenarios>

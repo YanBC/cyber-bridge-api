@@ -1,7 +1,7 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>    
-    <scenario name="StationaryObjectBlockingAllLane" type="StationaryObjectBlockingAllLane" town="Town03">
-        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
-        <destination x="239.39" y="40.36" />
+    <scenario name="StationaryObjectBlockingAllLane" town="Town03" type="StationaryObjectBlockingAllLane">
+        <ego_vehicle model="vehicle.tesla.model3" x="239.39" y="113.42" yaw="270" z="2.36"></ego_vehicle>
+        <destination x="239.39" y="40.36"></destination>
     </scenario>
 </scenarios>

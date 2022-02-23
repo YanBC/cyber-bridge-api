@@ -1,7 +1,7 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>    
-    <scenario name="WalkerCrossing" type="WalkerCrossingWithStop" town="Town03">
-        <ego_vehicle x="110" y="129" z="1" yaw="180" model="vehicle.lincoln.mkz2017"/>
-        <destination x="20" y="129" />
+    <scenario name="WalkerCrossing" town="Town03" type="WalkerCrossingWithStop">
+        <ego_vehicle model="vehicle.tesla.model3" x="110" y="129" yaw="180" z="1"></ego_vehicle>
+        <destination x="20" y="129"></destination>
     </scenario>
 </scenarios>

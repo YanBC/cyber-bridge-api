@@ -1,7 +1,7 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>    
-    <scenario name="FollowWalker" type="FollowWalker" town="Town03">
-        <ego_vehicle x="120" y="193" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <destination x="20" y="193" />
+    <scenario name="FollowWalker" town="Town03" type="FollowWalker">
+        <ego_vehicle model="vehicle.tesla.model3" x="120" y="193" yaw="180" z="3"></ego_vehicle>
+        <destination x="20" y="193"></destination>
     </scenario>
 </scenarios>

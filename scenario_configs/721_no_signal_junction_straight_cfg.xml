@@ -1,8 +1,8 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>
-    <scenario name="NoSignalJunctionCrossingGoStraight" type="NoSignalJunctionCrossingGoStraight" town="Town03">
-        <ego_vehicle x="-74.32" y="-90" z="0.5" yaw="270" model="vehicle.lincoln.mkz2017" />        
-        <other_actor x="-45" y="-139" z="0.5" yaw="180" model="vehicle.tesla.model3" />
-        <destination x="-74.32" y="-160" />
+    <scenario name="NoSignalJunctionCrossingGoStraight" town="Town03" type="NoSignalJunctionCrossingGoStraight">
+        <ego_vehicle model="vehicle.tesla.model3" x="-74.32" y="-90" yaw="270" z="0.5"></ego_vehicle>        
+        <other_actor model="vehicle.tesla.model3" x="-45" y="-139" yaw="180" z="0.5"></other_actor>
+        <destination x="-74.32" y="-160"></destination>
     </scenario>
 </scenarios>

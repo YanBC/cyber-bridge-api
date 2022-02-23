@@ -1,9 +1,9 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <scenarios>    
-    <scenario name="WalkerCrossingWithProp" type="WalkerCrossingWithProp" town="Town03">
-        <ego_vehicle x="127.93" y="129.89" z="1" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <other_actor x="47.93" y="127.39" z="1" yaw="180" model="vehicle.tesla.model3" />
-        <other_actor x="40.93" y="127.39" z="1" yaw="180" model="vehicle.tesla.model3" />
-        <destination x="20" y="129" />
+    <scenario name="WalkerCrossingWithProp" town="Town03" type="WalkerCrossingWithProp">
+        <ego_vehicle model="vehicle.tesla.model3" x="127.93" y="129.89" yaw="180" z="1"></ego_vehicle>
+        <other_actor model="vehicle.tesla.model3" x="47.93" y="127.39" yaw="180" z="1"></other_actor>
+        <other_actor model="vehicle.tesla.model3" x="40.93" y="127.39" yaw="180" z="1"></other_actor>
+        <destination x="20" y="129"></destination>
     </scenario>
 </scenarios>
