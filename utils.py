@@ -107,9 +107,11 @@ def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location:
 #######################
 # service discovery
 #######################
-LEASE_SERVICE_NAME = "simulator:lease"
-APOLLO_SERVICE_NAME = "simulator:apollo"
-CARLA_SERVICE_NAME = "simulator:carla"
+# TODO: should be in a config file or as input params
+LEASE_SERVICE_NAME = "simulation.lease"
+APOLLO_SERVICE_NAME = "simulation.apollo"
+CARLA_SERVICE_NAME = "simulation.carla"
+NACOS_NAMESPACE = "8360272a-4ca0-4e9f-8822-51b156c5c6f1"
 
 
 def hovor_resource(
@@ -142,10 +144,10 @@ def acquire_servers(
                     default to 60 seconds
     '''
     # create nacos client
-    client = nacos.NacosClient(s_discovery)
+    client = nacos.NacosClient(s_discovery, namespace=NACOS_NAMESPACE)
 
     # get lease server
-    services = client.list_naming_instance(LEASE_SERVICE_NAME)
+    services = client.list_naming_instance(LEASE_SERVICE_NAME, healthy_only=False)
     services_hosts = services["hosts"]
     if len(services_hosts) == 0:
         raise RuntimeError("No lease services")
@@ -155,7 +157,7 @@ def acquire_servers(
         lease_redis.append(Redis.from_url(lease_url))
 
     # get available apollo servers
-    services = client.list_naming_instance(APOLLO_SERVICE_NAME)
+    services = client.list_naming_instance(APOLLO_SERVICE_NAME, healthy_only=False)
     services_hosts = services["hosts"]
     if len(services_hosts) == 0:
         raise RuntimeError("No apollo services")
@@ -181,7 +183,7 @@ def acquire_servers(
     apollo_hover_thread.start()
 
     # get available carla servers
-    services = client.list_naming_instance(CARLA_SERVICE_NAME)
+    services = client.list_naming_instance(CARLA_SERVICE_NAME, healthy_only=False)
     services_hosts = services["hosts"]
     if len(services_hosts) == 0:
         raise RuntimeError("No carla services")

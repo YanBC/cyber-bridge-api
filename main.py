@@ -153,6 +153,7 @@ def get_args():
         args.apollo_host = apollo_host
         args.apollo_port = 9090
         args.dreamview_port = 8888
+        print(f"Dreamview at {args.apollo_host}:{args.dreamview_port}")
     ac_args.carla_host = args.carla_host
     ac_args.carla_port = args.carla_port
     ac_args.apollo_host = args.apollo_host
