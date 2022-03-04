@@ -12,8 +12,8 @@ import carla
 from sensors.apollo_control import listen_and_apply_control
 from sensors.utils import setup_sensors
 from pygame_viewer import view_game
-from utils import is_actor_exist, load_json, get_vehicle_by_role_name
-from scenario_runner import scenario_run
+from utils import acquire_servers, is_actor_exist, load_json, get_vehicle_by_role_name
+from scenario_runner.scenario_runner import scenario_run
 from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
@@ -68,6 +68,13 @@ def get_args():
     argparser = argparse.ArgumentParser(
         description='Run scenarios which run in carla, '
         'and the AD statck is Apollo')
+    argparser.add_argument(
+        "--discover",
+        default="",
+        help="service dicovery addr (ip:port)"
+        "if specified, flags about apollo and carla server "
+        "ip addr and port like --carla-host, --apollo-host will be"
+        "ignored")
     argparser.add_argument(
         '--carla-host',
         default='127.0.0.1',
@@ -133,6 +140,19 @@ def get_args():
 
     # communication with apollo and carla args
     ac_args = argparse.Namespace()
+    stop_event = multiprocessing.Event()
+    if args.discover != "":
+        # TODO
+        # duration is hardcoded to 5 mins because there is
+        # no way to tell how long a simulation will run
+        # for now.
+        apollo_host, carla_host = acquire_servers(
+            stop_event, args.discover, duration=60*5)
+        args.carla_host = carla_host
+        args.carla_port = 2000
+        args.apollo_host = apollo_host
+        args.apollo_port = 9090
+        args.dreamview_port = 8888
     ac_args.carla_host = args.carla_host
     ac_args.carla_port = args.carla_port
     ac_args.apollo_host = args.apollo_host
@@ -179,7 +199,7 @@ def get_args():
 
     # scenario runner args
     sr_args = {**sr_host_dict, **sr_config}
-    return ac_args, argparse.Namespace(**sr_args)
+    return ac_args, argparse.Namespace(**sr_args), stop_event
 
 
 def get_args_external(arguments: argparse.Namespace()):
@@ -258,7 +278,10 @@ def wait_vehicle_stable(world, vehicle):
             world.tick()
 
 
-def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
+def main(
+        ac_args: argparse.Namespace,
+        sr_args: argparse.Namespace,
+        stop_event: multiprocessing.Event):
     # logging.basicConfig(level=logging.INFO)
     apollo_host = ac_args.apollo_host
     apollo_port = ac_args.apollo_port
@@ -327,7 +350,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
 
         scenario_runner = multiprocessing.Process(
                         target=run_scenario,
-                        args=(log_dir, "scenario_runner", sr_args))
+                        args=(log_dir, "scenario_runner", sr_args, stop_event))
         scenario_runner.start()
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
@@ -338,7 +361,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
             viewer = multiprocessing.Process(
                     target=run_pygame,
                     args=(log_dir, "view_game", ego_role_name, carla_host,
-                          carla_port, 1080, 720))
+                          carla_port, 1080, 720, stop_event))
             viewer.start()
             child_pid_file.write(f"viewer pid: {viewer.pid}\n")
         else:
@@ -348,7 +371,7 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
                             target=run_control,
                             args=(log_dir, "apollo_control", ego_role_name,
                                   carla_host, carla_port, apollo_host,
-                                  apollo_port))
+                                  apollo_port, stop_event))
         control_sensor.start()
         child_pid_file.write(f"control_sensor pid: {control_sensor.pid}\n")
         sensors_config = multiprocessing.Process(
@@ -356,15 +379,15 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
                             args=(log_dir, "carla_sensors",
                                   ego_role_name, carla_host,
                                   carla_port, apollo_host, apollo_port,
-                                  sensor_config))
+                                  sensor_config, stop_event))
         sensors_config.start()
         child_pid_file.write(f"sensors_config pid: {sensors_config.pid}\n")
 
         child_pid_file.close()
         clock = pygame.time.Clock()
-        while True:
-            if not is_actor_exist(sim_world, role_name=ego_role_name):
-                break
+        while not stop_event.is_set():
+            # if not is_actor_exist(sim_world, role_name=ego_role_name):
+            #     break
             if fps < 0:
                 time.sleep(1)
             else:
@@ -391,5 +414,5 @@ def external_run_scenario(arguments: argparse.Namespace()):
 
 
 if __name__ == "__main__":
-    ac_args, sr_args = get_args()
-    main(ac_args, sr_args)
+    ac_args, sr_args, global_stop_event = get_args()
+    main(ac_args, sr_args, global_stop_event)

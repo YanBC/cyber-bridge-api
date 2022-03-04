@@ -49,6 +49,7 @@ from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
+import multiprocessing
 
 
 # ==============================================================================
@@ -451,7 +452,8 @@ def view_game(
         carla_host: str,
         carla_port: int,
         screen_width: int = 1280,
-        screen_height: int = 720):
+        screen_height: int = 720,
+        stop_event: multiprocessing.Event = None):
 
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
@@ -476,15 +478,15 @@ def view_game(
     # controller = MC_KeyboardControl(world, False)
 
     try:
-        while True:
+        while not stop_event.is_set():
             sim_world.wait_for_tick()
             if controller.parse_events(client, world, clock):
                 break
 
-            if not is_actor_exist(sim_world, actor_type=player_type):
-                logging.info("ego vehicle no longer exist")
-                logging.info("exiting...")
-                break
+            # if not is_actor_exist(sim_world, actor_type=player_type):
+            #     logging.info("ego vehicle no longer exist")
+            #     logging.info("exiting...")
+            #     break
 
             clock.tick()
             if not world.tick(clock):

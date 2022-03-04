@@ -11,6 +11,7 @@ from utils import (
     get_vehicle_by_role_name,
     is_actor_exist
 )
+import multiprocessing
 
 
 class SensorManager:
@@ -56,7 +57,8 @@ def setup_sensors(
                 carla_port: int,
                 apollo_host: str,
                 apollo_port: int,
-                sensor_config: dict):
+                sensor_config: dict,
+                stop_event: multiprocessing.Event):
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
     sim_world = client.get_world()
@@ -104,11 +106,11 @@ def setup_sensors(
         t.start()
 
     try:
-        while True:
-            if not is_actor_exist(sim_world, actor_type=player_type):
-                logging.info("ego vehicle no longer exist")
-                logging.info("exiting...")
-                break
+        while not stop_event.is_set():
+            # if not is_actor_exist(sim_world, actor_type=player_type):
+            #     logging.info("ego vehicle no longer exist")
+            #     logging.info("exiting...")
+            #     break
             sim_world.wait_for_tick()
             sensor_manager.send_apollo_msgs()
     finally:

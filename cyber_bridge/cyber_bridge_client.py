@@ -142,7 +142,8 @@ class BufferedSocket:
         try:
             dataBytes = self._socket.recv(msgLength)
         except socket.timeout:
-            logging.warning("socket receive timed out")
+            # logging.warning("socket receive timed out")
+            pass
 
         if len(dataBytes) == 0:
             return ret
