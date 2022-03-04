@@ -1,7 +1,8 @@
-<?xml version="1.0"?>
-<scenarios>    
-    <scenario name="StationaryObjectBlockingLane" type="StationaryObjectBlockingLane" town="Town03">
-        <ego_vehicle x="239.39" y="113.42" z="2.36" yaw="270" model="vehicle.lincoln.mkz2017" />
-        <destination x="239.39" y="40.36" />
-    </scenario>
+<?xml version="1.0" ?>
+<scenarios>
+  <scenario name="StationaryObjectBlockingLane" town="Town03" type="StationaryObjectBlockingLane">
+    <ego_vehicle model="vehicle.tesla.model3" x="239.39" y="113.42" yaw="270" z="2.36"/>
+    <destination x="239.39" y="40.36"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

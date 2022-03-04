@@ -1,8 +1,8 @@
-<?xml version="1.0"?>
-<scenarios>    
-    <scenario name="BorrowLane" type="BorrowLane" town="Town03">
-        <ego_vehicle x="128.27" y="130.49" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <!-- <other_actor x="10" y="195.5" z="-100" yaw="0" model="vehicle.tesla.model3" /> -->
-        <destination x="18.27" y="129.49" />
-    </scenario>
+<?xml version="1.0" ?>
+<scenarios>
+  <scenario name="BorrowLane" town="Town03" type="BorrowLane">
+    <ego_vehicle model="vehicle.tesla.model3" x="128.27" y="130.49" yaw="180" z="3"/>
+    <destination x="18.27" y="129.49"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>

@@ -6,6 +6,7 @@ import os
 import functools
 import logging
 import pygame
+import math
 
 import carla
 from sensors.apollo_control import listen_and_apply_control
@@ -181,6 +182,82 @@ def get_args():
     return ac_args, argparse.Namespace(**sr_args)
 
 
+def get_args_external(arguments: argparse.Namespace()):
+    args = arguments
+
+    # communication with apollo and carla args
+    ac_args = argparse.Namespace()
+    ac_args.carla_host = args.carla_host
+    ac_args.carla_port = args.carla_port
+    ac_args.apollo_host = args.apollo_host
+    ac_args.apollo_port = args.apollo_port
+    ac_args.dreamview_port = args.dreamview_port
+    ac_args.adc = args.adc
+    ac_args.show = args.show
+    ac_args.timeout = args.timeout
+    ac_args.sensor_config = args.sensor_config
+    ac_args.log_dir = args.log_dir
+    apollo_config = load_json(args.apollo_config)
+    ac_args.dreamview_mode = apollo_config['mode']
+    ac_args.apollo_modules = apollo_config['modules']
+    ac_args.fps = args.fps
+
+    # sr_host_keys = ['host', 'port', 'timeout']
+    sr_host_dict = dict()
+    sr_host_dict.update({'host': args.carla_host})
+    sr_host_dict.update({'port': args.carla_port})
+    sr_host_dict.update({'timeout': args.timeout})
+
+    scenario_configurations = []
+    sr_config = load_json(args.configFile)
+    sr_config.update({'sync': False})
+    sr_config.update({'list': False})
+    sr_config.update({'json': True})
+    scenario_configurations = \
+        SrCfgP.parse_scenario_configuration_with_customer_param(
+                sr_config['scenario'],
+                sr_config['configFile'])
+    sr_config.update(
+        {'scenario_configurations': scenario_configurations})
+
+    if len(scenario_configurations) > 0:
+        try:
+            ac_args.dst_x = scenario_configurations[0].destination.x
+            ac_args.dst_y = scenario_configurations[0].destination.y
+            ac_args.dst_z = scenario_configurations[0].destination.z
+        except Exception:
+            ac_args.dst_x = ac_args.dst_y = ac_args.dst_z = None
+        ego = scenario_configurations[0].ego_vehicles[0]
+        ac_args.srt_x = ego.transform.location.x
+        ac_args.srt_y = ego.transform.location.y
+        ac_args.srt_z = ego.transform.location.z
+
+    # scenario runner args
+    sr_args = {**sr_host_dict, **sr_config}
+    return ac_args, argparse.Namespace(**sr_args)
+
+
+def player_is_ready(vehicle: carla.Vehicle):
+    acce = vehicle.get_acceleration()
+    a = math.sqrt(
+            math.pow(acce.x, 2) + math.pow(acce.y, 2) +
+            math.pow(acce.z, 2))
+    if a > 0:
+        return False
+    else:
+        return True
+
+
+def wait_vehicle_stable(world, vehicle):
+    if world.get_settings().synchronous_mode:
+        world.tick()
+    while(True):
+        if player_is_ready(vehicle):
+            break
+        if world.get_settings().synchronous_mode:
+            world.tick()
+
+
 def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
     # logging.basicConfig(level=logging.INFO)
     apollo_host = ac_args.apollo_host
@@ -294,7 +371,6 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
 
-
     finally:
         reset_apollo(apollo_host, dreamview_port, apollo_modules)
         if not child_pid_file.closed:
@@ -307,6 +383,11 @@ def main(ac_args: argparse.Namespace, sr_args: argparse.Namespace):
             destroy_all_sensors(sim_world)
         if not show:
             pygame.quit()
+
+
+def external_run_scenario(arguments: argparse.Namespace()):
+    ac_args, sr_args = get_args_external(arguments)
+    main(ac_args, sr_args)
 
 
 if __name__ == "__main__":

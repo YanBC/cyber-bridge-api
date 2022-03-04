@@ -1,8 +1,9 @@
-<?xml version="1.0"?>
-<scenarios>    
-    <scenario name="CutInUser" type="CutInUser" town="Town03">
-        <ego_vehicle x="140" y="196.7" z="3" yaw="180" model="vehicle.lincoln.mkz2017" />
-        <other_actor x="100" y="193" z="-100" yaw="180" model="vehicle.tesla.model3" />
-        <destination x="20" y="196.7" />
-    </scenario>
+<?xml version="1.0" ?>
+<scenarios>
+  <scenario name="CutInUser" town="Town03" type="CutInUser">
+    <ego_vehicle model="vehicle.tesla.model3" x="140" y="196.7" yaw="180" z="3"/>
+    <other_actor model="vehicle.tesla.model3" x="100" y="193" yaw="180" z="-100"/>
+    <destination x="20" y="196.7"/>
+    <game_playtime>60.0</game_playtime>
+  </scenario>
 </scenarios>
