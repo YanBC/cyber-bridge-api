@@ -1,4 +1,4 @@
 [submodule "scenario_runner"]
 	path = scenario_runner
-	url = git@gitlab.quyan.info:the-flying-hoyshanist/scenario_runner.git
+	url = ../scenario_runner.git
 	branch = v0.9.11
