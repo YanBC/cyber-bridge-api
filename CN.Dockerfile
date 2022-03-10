@@ -3,6 +3,8 @@ FROM ubuntu:18.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+COPY ./CN.sources.list /etc/apt/sources.list
+
 RUN apt-get update && \
     apt-get install -yq \
         vim \
