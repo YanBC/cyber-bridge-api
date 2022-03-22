@@ -37,17 +37,6 @@ python main.py -h
 python main.py --carla-host <carla.server.ip.addr> --apollo-host <apollo.ip.addr> --configFile scenario_configs/781_stop_at_fix_location_cfg.json
 ```
 
-
-## TO-DO
-1. include scenario_runner as a git submodule, and start scenerio_manager as a child process
-2. turn all `print`s into `log`s
-3. <del>project docker image (Dockerfile)</del>
-4. apollo opendrive map converter (*.xodr -> apollo_map)
-5. communication between scenario_runner and main process
-6. <del>different frequency for different sensors</del>
-7. <del>sensor configuration files</del>
-
-
 ## Components
 A functioning simulator node should contains the following components:
 - Carla Sensors Module
@@ -185,6 +174,22 @@ bash
 
 
 ## Misc
+
+### Setup python environment
+```bash
+docker pull carlasim/carla:0.9.11 && \
+docker run -it -d --rm --name carla_temp carlasim/carla:0.9.11 bash && \
+docker cp carla_temp:/home/carla/PythonAPI/carla/dist/carla-0.9.11-py3.7-linux-x86_64.egg . && \
+docker stop carla_temp
+
+python3.7 -m venv pyVir
+source pyVir/bin/activate
+python -m easy_install carla-0.9.11-py3.7-linux-x86_64.egg && rm carla-0.9.11-py3.7-linux-x86_64.egg
+python -m pip install -r requirements.txt
+```
+
+
+
 ### Compile protos
 ```bash
 bash compile_proto.sh
