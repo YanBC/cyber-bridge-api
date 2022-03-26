@@ -1,0 +1,17 @@
+version "3.9"
+
+volumes:
+  simulation:
+
+services:
+  mysql:
+    image: "mysql:8.0.28-debian"
+    ports:
+      - "3306:3306"
+    volumes:
+      - simulation:/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=simulation
+      - MYSQL_USER=hoyshanist
+      - MYSQL_PASSWORD=hoyshanist
