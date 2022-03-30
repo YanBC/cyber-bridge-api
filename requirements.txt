@@ -4,5 +4,3 @@ numpy
 networkx
 transforms3d
 websocket-client
-pottery
-nacos-sdk-python

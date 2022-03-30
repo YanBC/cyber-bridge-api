@@ -214,3 +214,4 @@ modules/**/*.py
 logs/
 .vscode/
 pids.txt
+nacos-data/

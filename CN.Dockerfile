@@ -34,7 +34,7 @@ COPY . .
 RUN bash compile_proto.sh
 RUN python3.7 -m pip install -i https://mirrors.aliyun.com/pypi/simple opencv-python
 RUN python3.7 -m pip install -r ./scenario_runner/requirements.txt -i https://mirrors.aliyun.com/pypi/simple
-RUN python3.7 -m pip install -r ./requirements.txt -r db/requirements.txt -i https://mirrors.aliyun.com/pypi/simple
+RUN python3.7 -m pip install -r ./requirements.txt -r db/requirements.txt -r service_discovery/requirements.txt -i https://mirrors.aliyun.com/pypi/simple
 
 ENV PYTHONPATH=/simulator/scenario_runner:/third-parties/carla/PythonAPI:/third-parties/carla/PythonAPI/carla
 ENV SCENARIO_RUNNER_ROOT=/simulator/scenario_runner
