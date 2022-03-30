@@ -459,8 +459,10 @@ def view_game(
     client.set_timeout(4.0)
     sim_world = client.get_world()
 
-    player, player_type = get_vehicle_by_role_name(
-                        __name__, sim_world, ego_name)
+    player, _ = get_vehicle_by_role_name(
+                stop_event, __name__, sim_world, ego_name)
+    if stop_event.is_set():
+        return
 
     # initialize pygame
     pygame.init()
@@ -475,18 +477,12 @@ def view_game(
     world = WorldSR(client.get_world(), hud, ego_name, player)
     clock = pygame.time.Clock()         # for client fps
     controller = KeyboardControl(world)
-    # controller = MC_KeyboardControl(world, False)
 
     try:
         while not stop_event.is_set():
             sim_world.wait_for_tick()
             if controller.parse_events(client, world, clock):
                 break
-
-            # if not is_actor_exist(sim_world, actor_type=player_type):
-            #     logging.info("ego vehicle no longer exist")
-            #     logging.info("exiting...")
-            #     break
 
             clock.tick()
             if not world.tick(clock):

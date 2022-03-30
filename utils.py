@@ -12,9 +12,11 @@ import nacos
 from redis import Redis
 from pottery import Redlock, TooManyExtensions
 import logging
+import xml.etree.ElementTree as ET
 
 
 def get_vehicle_by_role_name(
+                stop_event: multiprocessing.Event,
                 module_name: str,
                 carla_world: carla.World,
                 role_name: str) -> Tuple[carla.Vehicle, str]:
@@ -30,6 +32,8 @@ def get_vehicle_by_role_name(
                 player = vehicle
                 player_type = player.type_id
                 break
+        if stop_event.is_set():
+            break
     return player, player_type
 
 
@@ -73,6 +77,10 @@ def pretty_json(data: str) -> str:
     json_data = json.loads(data)
     ret = json.dumps(json_data, indent=4, sort_keys=True)
     return ret
+
+
+def load_tree(filepath: str) -> ET.ElementTree:
+    return ET.parse(filepath)
 
 
 # Available on carla.Vehicle, carla.Walker

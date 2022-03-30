@@ -2,15 +2,14 @@ from threading import (Thread, Event)
 import carla
 from typing import List
 import logging
+import enum
 
 from cyber_bridge.cyber_bridge_client import CyberBridgeClient
 from sensors.base_sensor import Sensor
 
 from sensors import *
-from utils import (
-    get_vehicle_by_role_name,
-    is_actor_exist
-)
+from utils import get_vehicle_by_role_name
+
 import multiprocessing
 
 
@@ -51,21 +50,60 @@ def updater(s: Sensor, e: Event):
             pass
 
 
-def setup_sensors(
+class CarlaSensorsArgs:
+    def __init__(
+                self,
                 ego_name: str,
                 carla_host: str,
                 carla_port: int,
                 apollo_host: str,
                 apollo_port: int,
-                sensor_config: dict,
-                stop_event: multiprocessing.Event):
+                sensor_config: dict) -> None:
+        self.ego_name = ego_name
+        self.carla_host = carla_host
+        self.carla_port = carla_port
+        self.apollo_host = apollo_host
+        self.apollo_port = apollo_port
+        self.sensor_config = sensor_config
+
+
+class CarlaSensorsError(enum.Enum):
+    SUCCESS = 0
+    NETWORK_ERROR_CARLA = 2001
+    NETWORK_ERROR_APOLLO = 2002
+    UNKNOWN_ERROR = 9999
+    USER_INTERRUPT = 5001
+
+
+class CarlaSensorsResults:
+    def __init__(
+            self, err_code=CarlaSensorsError.SUCCESS) -> None:
+        self.err_code = err_code
+
+
+def setup_sensors(
+                args: CarlaSensorsArgs,
+                stop_event: multiprocessing.Event,
+                output_queue: multiprocessing.Queue):
+    ego_name = args.ego_name
+    carla_host = args.carla_host
+    carla_port = args.carla_port
+    apollo_host = args.apollo_host
+    apollo_port = args.apollo_port
+    sensor_config = args.sensor_config
+
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
     sim_world = client.get_world()
+    error_code = CarlaSensorsError.SUCCESS
 
-    player, player_type = get_vehicle_by_role_name(__name__,
-                                                   sim_world,
-                                                   ego_name)
+    player, _ = get_vehicle_by_role_name(
+                                    stop_event,
+                                    __name__,
+                                    sim_world,
+                                    ego_name)
+    if stop_event.is_set():
+        return
 
     sensor_list = []
     for config in sensor_config:
@@ -107,14 +145,22 @@ def setup_sensors(
 
     try:
         while not stop_event.is_set():
-            # if not is_actor_exist(sim_world, actor_type=player_type):
-            #     logging.info("ego vehicle no longer exist")
-            #     logging.info("exiting...")
-            #     break
             sim_world.wait_for_tick()
             sensor_manager.send_apollo_msgs()
+    except Exception as e:
+        # TODO
+        # fine-grained classification of error_code
+        # based on exception type
+        error_code = CarlaSensorsError.UNKNOWN_ERROR
     finally:
-        e.set()
+        if not e.is_set():
+            e.set()
+        if not stop_event.is_set():
+            stop_event.set()
+
+        result = CarlaSensorsResults(error_code)
+        output_queue.put(result)
+
         for t in updater_list:
             t.join()
         for sensor in sensor_list:

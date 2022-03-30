@@ -9,7 +9,7 @@
 | ----------- | ----------- | ----------- |
 | task_id| numeric| 测试id，主键|
 | simulator_version| string| simulator版本|
-| carla_version | string | carla 服务器版本 | 
+| carla_version | string | carla 服务器版本 |
 | carla_ip | string | carla服务器ip地址 |
 | carla_port| string| caral服务器端口|
 | apollo_version| string| apollo 服务器版本|
@@ -50,8 +50,9 @@
 - `2XXX`: 网络连接失败
     - `2001`: Carla服务器连接失败
     - `2002`: Apollo连接失败
-    - `2003`: nacos连接失败
-    - `2004`: redis连接失败
+    - `2004`: Redis连接失败
 - `3XXX`: Apollo bootstrap失败
 - `4XXX`: 仿真场景测试失败
 - `5XXX`: 其他错误
+    - `5001`: 用户中断
+- `9999`: 未知错误
