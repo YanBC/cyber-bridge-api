@@ -1,22 +1,4 @@
 {
-    "trafficManagerPort": "8000",
-    "trafficManagerSeed": "0",
-    "scenario": "NoSignalJunctionCrossingGoStraight",
-    "openscenario": null,
-    "openscenarioparams": null,
-    "route": null,
-    "agent": null,
-    "agentConfig": "",
-    "output": true,
-    "file": false,
-    "junit": false,
-    "json": false,
-    "outputDir": "",
-    "configFile": "./scenario_configs/721_no_signal_junction_straight_cfg.xml",
-    "debug": false,
-    "reloadWorld": false,
-    "record": "",
-    "randomize": false,
-    "repetitions": 1,
-    "waitForEgo": false
+    "config": "./scenario_configs/721_no_signal_junction_straight_cfg.xml",
+    "scenario": "NoSignalJunctionCrossingGoStraight"
 }

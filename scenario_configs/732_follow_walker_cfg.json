@@ -1,22 +1,4 @@
 {
-    "trafficManagerPort": "8000",
-    "trafficManagerSeed": "0",
-    "scenario": "FollowWalker",
-    "openscenario": null,
-    "openscenarioparams": null,
-    "route": null,
-    "agent": null,
-    "agentConfig": "",
-    "output": true,
-    "file": false,
-    "junit": false,
-    "json": false,
-    "outputDir": "",
-    "configFile": "./scenario_configs/732_follow_walker_cfg.xml",
-    "debug": false,
-    "reloadWorld": false,
-    "record": "",
-    "randomize": false,
-    "repetitions": 1,
-    "waitForEgo": false
+    "config": "./scenario_configs/732_follow_walker_cfg.xml",
+    "scenario": "FollowWalker"
 }

@@ -83,14 +83,13 @@ def main(args: argparse.Namespace):
     ego_role_name = args.adc
     show = args.show
     carla_timeout = args.timeout
-    sensor_config = load_json(args.sensor_config)
     log_dir = args.log_dir
     fps = args.fps
     sensor_config = load_json(args.sensor_config)
     apollo_config = load_json(args.apollo_config)
     sr_config = load_json(args.configFile)
     scenario_name = sr_config['scenario']
-    scenario_config_tree = load_tree(sr_config['configFile'])
+    scenario_config_tree = load_tree(sr_config['config'])
 
     # start simulation
     stop_event = multiprocessing.Event()
