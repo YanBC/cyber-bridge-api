@@ -1,3 +1,4 @@
+from importlib.resources import contents
 import random
 import multiprocessing
 import logging
@@ -12,6 +13,7 @@ LEASE_SERVICE_NAME = "simulation.lease"
 APOLLO_SERVICE_NAME = "simulation.apollo"
 CARLA_SERVICE_NAME = "simulation.carla"
 NACOS_NAMESPACE = "8360272a-4ca0-4e9f-8822-51b156c5c6f1"
+CONFIG_GROUP = "simulation"
 
 
 def hovor_resource(
@@ -30,7 +32,7 @@ def hovor_resource(
 
 def acquire_servers(
         stop_event: multiprocessing.Event,
-        s_discovery: str,
+        endpoint: str,
         duration: float = 60):
     '''
     Nonblocking operation
@@ -38,13 +40,13 @@ def acquire_servers(
     param:
         stop_event: global control event, set if were to stop
 
-        s_discovery: service discover endpoint, format http://ip:port
+        endpoint: service discover endpoint, format http://ip:port
 
-        duration: how long the servers are expected to be used
+        duration: how long the servers are expected to be held
                     default to 60 seconds
     '''
     # create nacos client
-    client = nacos.NacosClient(s_discovery, namespace=NACOS_NAMESPACE)
+    client = nacos.NacosClient(endpoint, namespace=NACOS_NAMESPACE)
 
     # get lease server
     services = client.list_naming_instance(LEASE_SERVICE_NAME, healthy_only=False)
@@ -109,3 +111,22 @@ def acquire_servers(
     carla_hover_thread.start()
 
     return apollo_host, carla_host
+
+
+def query_config(
+        endpoint: str,
+        key: str) -> str:
+    client = nacos.NacosClient(endpoint, namespace=NACOS_NAMESPACE)
+    ret = client.get_config(key, CONFIG_GROUP)
+    if ret is None:
+        return ""
+    else:
+        return ret
+
+
+def publish_config(
+        endpoint: str,
+        key: str,
+        value: str) -> bool:
+    client = nacos.NacosClient(endpoint, namespace=NACOS_NAMESPACE)
+    return client.publish_config(key, CONFIG_GROUP, value)
