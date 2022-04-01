@@ -3,3 +3,6 @@ This folder contains hd maps and vehicle names mapping between Carla and Apollo.
 All json files are of the same format:
 - Key: entity name in Carla
 - Value: entity name in Apollo
+
+## TODOs
+1. Update `maps.json`

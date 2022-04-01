@@ -1,5 +1,4 @@
 import argparse
-from mmap import PROT_WRITE
 from db.mysql_utils import (
     create_connection,
     initialize_database
@@ -29,4 +28,3 @@ if __name__ == '__main__':
         cnx.commit()
     finally:
         cnx.close()
-

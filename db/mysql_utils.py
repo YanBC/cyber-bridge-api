@@ -39,7 +39,8 @@ def _insert_reulsts(
                 carla_port,
                 apollo_version,
                 apollo_ip,
-                apollo_port,
+                dreamview_port,
+                bridge_port,
                 error_code,
                 sensors_config_id,
                 start_time,
@@ -55,7 +56,8 @@ def _insert_reulsts(
         "carla_port": carla_port,
         "apollo_version": apollo_version,
         "apollo_ip": apollo_ip,
-        "apollo_port": apollo_port,
+        "dreamview_port": dreamview_port,
+        "bridge_port": bridge_port,
         "error_code": error_code,
         "sensors_config_id": sensors_config_id,
         "start_time": start_time,
@@ -99,7 +101,8 @@ def save_result(
             carla_port,
             apollo_version,
             apollo_ip,
-            apollo_port,
+            dreamview_port,
+            bridge_port,
             error_code,
             sensors_config_id,
             start_time,
@@ -108,7 +111,7 @@ def save_result(
             scenario_id,
             criteria: dict):
     try:
-        _insert_reulsts(cnx, task_id, simulator_version, carla_version, carla_ip, carla_port, apollo_version, apollo_ip, apollo_port, error_code, sensors_config_id, start_time, end_time, ego, scenario_id)
+        _insert_reulsts(cnx, task_id, simulator_version, carla_version, carla_ip, carla_port, apollo_version, apollo_ip, dreamview_port, bridge_port, error_code, sensors_config_id, start_time, end_time, ego, scenario_id)
         for c in criteria:
             c_type = c['name']
             expected = str(c['expected'])
@@ -149,7 +152,7 @@ def initialize_database(cnx):
     try:
         _create_tables(cnx)
         for c in err_table:
-            insert_error_codes(cnx, c, err_table[c])
+            insert_error_codes(cnx, c.value, err_table[c])
     except Exception as e:
         cnx.rollback()
         raise e
