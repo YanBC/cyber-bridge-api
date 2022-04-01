@@ -11,10 +11,13 @@ class ErrorCodes(enum.Enum):
     NETWORK_ERROR_CARLA = 2001
     NETWORK_ERROR_APOLLO = 2002
     NETWORK_ERROR_REDIS = 2004
+    NETWORK_ERROR_MYSQL = 2005
     APOLLO_BOOSTRAP_ERROR = 3000
     SIMULATION_FAIL = 4000
     OTHER_ERROR = 5000
     USER_INTERRUPT = 5001
+    DB_ERROR = 6000
+    DB_ERROR_FAIL_TO_WRITE = 6001
     UNKNOWN_ERROR = 9999
 
 
@@ -25,9 +28,12 @@ err_table = {
     ErrorCodes.NETWORK_ERROR_CARLA: "Carla服务器连接失败",
     ErrorCodes.NETWORK_ERROR_APOLLO: "Apollo连接失败",
     ErrorCodes.NETWORK_ERROR_REDIS: "Redis连接失败",
+    ErrorCodes.NETWORK_ERROR_MYSQL: "Mysql连接失败",
     ErrorCodes.APOLLO_BOOSTRAP_ERROR: "Apollo bootstrap错误",
     ErrorCodes.SIMULATION_FAIL: "仿真场景测试失败",
     ErrorCodes.OTHER_ERROR: "其他错误",
     ErrorCodes.USER_INTERRUPT: "用户中断",
-    ErrorCodes.UNKNOWN_ERROR: "未知错误"
+    ErrorCodes.UNKNOWN_ERROR: "未知错误",
+    ErrorCodes.DB_ERROR: "数据库错误",
+    ErrorCodes.DB_ERROR_FAIL_TO_WRITE: "保存数据出错",
 }

@@ -29,6 +29,7 @@ def create_connection(
     else:
         return cnx
 
+
 # write to table results
 def _insert_reulsts(
                 cnx,
@@ -46,7 +47,8 @@ def _insert_reulsts(
                 start_time,
                 end_time,
                 ego,
-                scenario_id):
+                scenario_id,
+                apollo_config_id):
     cursor = cnx.cursor()
     params = {
         "task_id": task_id,
@@ -64,6 +66,7 @@ def _insert_reulsts(
         "end_time": end_time,
         "ego": ego,
         "scenario_id": scenario_id,
+        "apollo_config_id": apollo_config_id
     }
     try:
         cursor.execute(insert_results_sql, params)
@@ -95,23 +98,24 @@ def _insert_criteria(
 def save_result(
             cnx,
             task_id,
+            error_code,
             simulator_version,
             carla_version,
+            apollo_version,
             carla_ip,
             carla_port,
-            apollo_version,
             apollo_ip,
             dreamview_port,
             bridge_port,
-            error_code,
             sensors_config_id,
+            apollo_config_id,
+            scenario_id,
             start_time,
             end_time,
             ego,
-            scenario_id,
             criteria: dict):
     try:
-        _insert_reulsts(cnx, task_id, simulator_version, carla_version, carla_ip, carla_port, apollo_version, apollo_ip, dreamview_port, bridge_port, error_code, sensors_config_id, start_time, end_time, ego, scenario_id)
+        _insert_reulsts(cnx, task_id, simulator_version, carla_version, carla_ip, carla_port, apollo_version, apollo_ip, dreamview_port, bridge_port, error_code, sensors_config_id, start_time, end_time, ego, scenario_id, apollo_config_id)
         for c in criteria:
             c_type = c['name']
             expected = str(c['expected'])
