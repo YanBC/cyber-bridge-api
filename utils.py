@@ -1,3 +1,4 @@
+import os
 import time
 import math
 import json
@@ -104,3 +105,13 @@ def longitudinal_offset(wp: carla.Waypoint, offset: float) -> carla.Location:
         offset * math.cos(math.radians(offset_angel)),
         offset * math.sin(math.radians(offset_angel)))
     return wp.transform.location + offset_location
+
+
+def get_simulator_version() -> str:
+    dir = os.path.dirname(__file__)
+    version_file = os.path.join(dir, "VERSION")
+    if not os.path.isfile(version_file):
+        raise RuntimeError("version file not found")
+    with open(version_file) as f:
+        version = f.read()
+    return version.strip()
