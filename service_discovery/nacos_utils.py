@@ -1,9 +1,11 @@
-from importlib.resources import contents
+import xml.etree.ElementTree as ET
+import json
 import random
 import multiprocessing
 import logging
 import threading
 import time
+from typing import Tuple
 import nacos
 from redis import Redis
 from pottery import Redlock, TooManyExtensions
@@ -115,13 +117,13 @@ def acquire_servers(
 
 def query_config(
         endpoint: str,
-        key: str) -> str:
+        key: str) -> dict:
     client = nacos.NacosClient(endpoint, namespace=NACOS_NAMESPACE)
     ret = client.get_config(key, CONFIG_GROUP)
     if ret is None:
-        return ""
+        return None
     else:
-        return ret
+        return json.loads(ret)
 
 
 def publish_config(
@@ -130,3 +132,27 @@ def publish_config(
         value: str) -> bool:
     client = nacos.NacosClient(endpoint, namespace=NACOS_NAMESPACE)
     return client.publish_config(key, CONFIG_GROUP, value)
+
+
+def get_scenario_config(
+        endpoint: str,
+        config_id: str) -> Tuple[str, ET.ElementTree]:
+    config = query_config(endpoint, config_id)
+    if config is None:
+        return "", None
+
+    scenario_name = config['scenario']
+    xml_tree = ET.ElementTree(ET.fromstring(config['config_xml']))
+    return scenario_name, xml_tree
+
+
+def get_sensor_config(
+        endpoint: str,
+        config_id: str) -> dict:
+    return query_config(endpoint, config_id)
+
+
+def get_apollo_config(
+        endpoint: str,
+        config_id: str) -> dict:
+    return query_config(endpoint, config_id)

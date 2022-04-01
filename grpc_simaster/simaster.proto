@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package simaster;
+
+message TaskArgs {
+    int64 task_id = 1;
+    string scenario_config_id = 2;
+    string sensor_config_id = 3;
+    string apollo_config_id = 4;
+}
+
+message TaskReply {
+    int32 err_code = 1;
+}
+
+service Simulation {
+    rpc Run(TaskArgs) returns (TaskReply) {}
+}

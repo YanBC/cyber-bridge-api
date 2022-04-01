@@ -4,7 +4,7 @@ import os
 
 from service_discovery.nacos_utils import (
     publish_config,
-    query_config)
+    get_scenario_config)
 
 
 SCENARIO_CONFIG_DIR = "./scenario_configs/"
@@ -83,18 +83,6 @@ def publish_apollo_configs(endpoint: str):
             print(f"fail to publish {filepath}")
 
 
-def get_free_ride_config(endpoint: str):
-    import xml.etree.ElementTree as ET
-    config_str = query_config(endpoint, "scenario_config.free_ride")
-    config = json.loads(config_str)
-    print(config.keys())
-    print(f"scenario: {config['scenario']}")
-
-    xml_tree = ET.ElementTree(ET.fromstring(config['config_xml']))
-    print(xml_tree)
-
-
-
 if __name__ == "__main__":
     args = get_args()
     endpoint = f"{args.host}:{args.port}"
@@ -104,4 +92,5 @@ if __name__ == "__main__":
     publish_apollo_configs(endpoint)
 
     # test if configs really get pushed
-    # get_free_ride_config(endpoint)
+    scenario, xml_tree = get_scenario_config(
+        endpoint, "scenario_config.free_ride")

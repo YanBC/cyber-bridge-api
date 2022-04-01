@@ -1,0 +1,16 @@
+{
+    "host": "localhost",
+    "port": "57886",
+    "num_worker": 6,
+    "db": {
+        "host": "10.18.6.109",
+        "port": 3306,
+        "database": "simulation",
+        "user": "hoyshanist",
+        "password": "hoyshanist"
+    },
+    "nacos": {
+        "host": "10.18.6.109",
+        "port": 8848
+    }
+}
