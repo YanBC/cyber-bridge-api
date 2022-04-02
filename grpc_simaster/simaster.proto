@@ -13,6 +13,13 @@ message TaskReply {
     int32 err_code = 1;
 }
 
+message GetVersionArgs {}
+
+message GetVersionReply {
+    string v = 1;
+}
+
 service Simulation {
     rpc Run(TaskArgs) returns (TaskReply) {}
+    rpc GetVersion(GetVersionArgs) returns (GetVersionReply) {}
 }

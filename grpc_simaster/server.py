@@ -3,7 +3,8 @@ import grpc
 from concurrent import futures
 from grpc_simaster.simaster_pb2_grpc import (
     SimulationServicer, add_SimulationServicer_to_server)
-from grpc_simaster.simaster_pb2 import TaskArgs, TaskReply
+from grpc_simaster.simaster_pb2 import (
+    TaskArgs, TaskReply, GetVersionArgs, GetVersionReply)
 from grpc_simaster.core import run_scenario
 from db.error_codes import ErrorCodes
 
@@ -48,6 +49,10 @@ class SimasterServicer(SimulationServicer):
         )
 
         reply = TaskReply(err_code=err.value)
+        return reply
+
+    def GetVersion(self, request: GetVersionArgs, reply: GetVersionReply):
+        reply = GetVersionReply(v=self.simulator_version)
         return reply
 
 

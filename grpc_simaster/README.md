@@ -1,4 +1,7 @@
 ## Compile protos
+`simaster.proto` contains definitions of the simaster grpc service as well as input and output messages.
+
+To compile the corresponding python files:
 ```bash
 # in project root:
 python -m grpc_tools.protoc \
@@ -8,12 +11,12 @@ python -m grpc_tools.protoc \
     grpc_simaster/simaster.proto
 ```
 
-## Run grpc server
+## Example run
 ```bash
 python start_simaster.py
 ```
 
 In another terminal, run example client script:
 ```bash
-python grpc_simaster/example_client.py
+python simaster_client_example.py
 ```
