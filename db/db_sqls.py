@@ -65,7 +65,7 @@ INSERT INTO
         scenario_id,
         start_time,
         end_time,
-        ego,
+        ego
     )
 VALUES
     (
@@ -84,7 +84,7 @@ VALUES
         %(scenario_id)s,
         %(start_time)s,
         %(end_time)s,
-        %(ego)s,
+        %(ego)s
     )
 """
 

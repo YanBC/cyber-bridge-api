@@ -93,4 +93,6 @@ if __name__ == "__main__":
 
     # test if configs really get pushed
     scenario, xml_tree = get_scenario_config(
-        endpoint, "scenario_config.free_ride")
+        endpoint, "scenario_config.781_stop_at_fix_location_cfg")
+    print(scenario)
+    print(xml_tree)
