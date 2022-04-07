@@ -22,6 +22,7 @@ from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
 from db.error_codes import ErrorCodes
+from dreamview_api import RouteManagement
 
 
 def destroy_all_sensors(world):
@@ -226,7 +227,7 @@ def start_simulation(
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
         # wait for ego to be created
-        get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
+        player, _ = get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
         if stop_event.is_set():
             scenario_run_result = scenario_runner_queue.get()
             result = NewSimulationResult(
@@ -282,12 +283,16 @@ def start_simulation(
 
         child_pid_file.close()
         clock = pygame.time.Clock()
+        manager_route = RouteManagement(player, end_waypoint, sim_world,
+                                        apollo_host, dreamview_port)
         while not stop_event.is_set():
             if fps < 0:
                 time.sleep(1)
             else:
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
+                manager_route.update()
+
     except Exception as e:
         logging.error(e)
         result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
