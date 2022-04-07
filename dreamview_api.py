@@ -3,7 +3,7 @@ import json
 import logging
 import carla
 from typing import List
-from utils import longitudinal_offset
+from utils import longitudinal_offset, longitudinal_offset_by_yaw
 import time
 import random
 
@@ -207,7 +207,8 @@ class RouteManagement:
         the car and the location of the gps sensor
         '''
         veh_ref_location = veh_ref_pos.transform.location
-        start_location = longitudinal_offset(veh_ref_pos, rear_to_center_in_x, self.actor)
+        actor_yaw = self.actor.get_transform().rotation.yaw
+        start_location = longitudinal_offset_by_yaw(veh_ref_pos, rear_to_center_in_x, actor_yaw)
         end_location = end_pos.transform.location
         ori_end_location = ori_end_loc
 
