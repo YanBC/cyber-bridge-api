@@ -40,6 +40,8 @@ class ApolloControl:
                 host, port, [], [self._decoder])
         self.bridge.initialize()
         self.control = None
+        self.timeout_rcv_cmd = 2
+        self.lock = threading.Lock()
 
     @staticmethod
     def background(weak_self, stop_event: threading.Event):
@@ -48,28 +50,36 @@ class ApolloControl:
         while not stop_event.is_set():
             pbCls_list = self.bridge.recv_pb_messages()
 
+            if time.time() - lastRcv > self.timeout_rcv_cmd:
+                logging.error(f"Timeout[{self.timeout_rcv_cmd}] to receive control cmd")
+                stop_event.set()
+                break
+
             if len(pbCls_list) == 0:
                 self.control = None
+                time.sleep(1e-3)    # sleep 1ms
+                continue
             else:
                 pbControl = pbCls_list[-1]
                 self.control = self._decoder.protobufToCarla(pbControl)
                 lastRcv = time.time()
 
-            if time.time() - lastRcv > 1:
-                stop_event.set()
-                break
-
     @staticmethod
     def listen(weak_self, stop_event: threading.Event):
         self = weak_self()
         while not stop_event.is_set():
-            if self.control is None:
-                continue
             try:
+                self.lock.acquire()
+                if self.control is None:
+                     continue
                 self.ego_vehicle.apply_control(self.control)
+                self.ego_vehicle.get_world().wait_for_tick()  # apply_control is AsyncCall
             except Exception as e:
+                logging.error(f"apply_control exception.control:{self.control}")
                 stop_event.set()
                 break
+            finally:
+                self.lock.release()
 
 
 class ApolloControlArgs:
