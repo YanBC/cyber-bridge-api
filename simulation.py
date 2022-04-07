@@ -42,6 +42,10 @@ def logging_wrapper(func):
         logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
         if os.path.isfile(logfilepath):
             os.remove(logfilepath)
+        root = logging.getLogger()
+        if root.handlers:
+            for handler in root.handlers:
+                root.removeHandler(handler)
         logging.basicConfig(
                 filename=logfilepath,
                 level=logging.INFO,
@@ -68,6 +72,11 @@ def run_sensors(*args, **kwargs):
 @logging_wrapper
 def run_scenario(*args, **kwargs):
     return scenario_run(*args, **kwargs)
+
+
+@logging_wrapper
+def startup_simulation(*args, **kwargs):
+    return start_simulation(*args, **kwargs)
 
 
 class SimulationArgs:
@@ -115,7 +124,7 @@ def start_simulation(
             # apollo_configs/pnc_testing.json
             apollo_config: dict,
             fps=50,
-            log_dir='./log',
+            child_proc_log_dir='./log',
             ego_role_name='hero',
             carla_timeout=20.0,
             show=False) -> SimulationResult:
@@ -123,6 +132,7 @@ def start_simulation(
     # Parse arguments
     #########################
     result = SimulationResult()
+    log_dir = child_proc_log_dir
     try:
         dreamview_mode = apollo_config['mode']
         apollo_modules = apollo_config["modules"]
