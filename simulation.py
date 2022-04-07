@@ -74,7 +74,7 @@ def run_scenario(*args, **kwargs):
     return scenario_run(*args, **kwargs)
 
 
-@logging_wrapper
+# @logging_wrapper
 def startup_simulation(*args, **kwargs):
     return start_simulation(*args, **kwargs)
 
@@ -124,7 +124,7 @@ def start_simulation(
             # apollo_configs/pnc_testing.json
             apollo_config: dict,
             fps=50,
-            child_proc_log_dir='./log',
+            log_dir='./log',
             ego_role_name='hero',
             carla_timeout=20.0,
             show=False) -> SimulationResult:
@@ -132,7 +132,6 @@ def start_simulation(
     # Parse arguments
     #########################
     result = SimulationResult()
-    log_dir = child_proc_log_dir
     try:
         dreamview_mode = apollo_config['mode']
         apollo_modules = apollo_config["modules"]

@@ -94,8 +94,6 @@ def main(args: argparse.Namespace):
     # start simulation
     stop_event = multiprocessing.Event()
     result = startup_simulation(
-        log_dir,
-        "simulation",
         stop_event=stop_event,
         apollo_host=apollo_host,
         apollo_port=apollo_port,
@@ -107,7 +105,7 @@ def main(args: argparse.Namespace):
         sensor_config=sensor_config,
         apollo_config=apollo_config,
         fps=fps,
-        child_proc_log_dir=log_dir,
+        log_dir=log_dir,
         ego_role_name=ego_role_name,
         carla_timeout=carla_timeout,
         show=show)
