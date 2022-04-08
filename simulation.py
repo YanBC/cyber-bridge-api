@@ -292,15 +292,17 @@ def start_simulation(
 
         child_pid_file.close()
         clock = pygame.time.Clock()
-        manager_route = RouteManagement(player, end_waypoint, sim_world,
-                                        apollo_host, dreamview_port)
+        if scenario_configs[0].type == "FreeRun":
+            manager_route = RouteManagement(player, end_waypoint, sim_world,
+                                            apollo_host, dreamview_port)
         while not stop_event.is_set():
             if fps < 0:
                 time.sleep(1)
             else:
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
-                manager_route.update()
+                if scenario_configs[0].type == "FreeRun":
+                    manager_route.update()
 
     except Exception as e:
         logging.error(e)
