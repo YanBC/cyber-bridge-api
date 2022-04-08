@@ -42,46 +42,56 @@ class ApolloControl:
         self.control = None
         self.timeout_rcv_cmd = 2
         self.lock = threading.Lock()
+        self.control_is_ready = False
+        self.cond = threading.Condition()
 
     @staticmethod
     def background(weak_self, stop_event: threading.Event):
         self = weak_self()
         lastRcv = time.time()
-        while not stop_event.is_set():
+        while True:
+            # self.bridge.recv_pb_messages is a blocking operation with timeout of 0.1s
             pbCls_list = self.bridge.recv_pb_messages()
 
-            if time.time() - lastRcv > self.timeout_rcv_cmd:
-                logging.error(f"Timeout[{self.timeout_rcv_cmd}] to receive control cmd")
-                stop_event.set()
+            if stop_event.is_set():
+                logging.info("stop event is set, thread background exiting ...")
                 break
 
-            self.lock.acquire()
-            try:
-                if len(pbCls_list) == 0:
-                    self.control = None
-                    time.sleep(1e-3)    # sleep 1ms
-                    continue
-                else:
-                    pbControl = pbCls_list[-1]
+            if len(pbCls_list) == 0 and time.time() - lastRcv > self.timeout_rcv_cmd:
+                logging.error(f"long time no message from apollo, exiting ..")
+                break
+
+            if len(pbCls_list) != 0:
+                lastRcv = time.time()
+                pbControl = pbCls_list[-1]
+                with self.cond:
+                    self.control_is_ready = True
                     self.control = self._decoder.protobufToCarla(pbControl)
-                    lastRcv = time.time()
-            finally:
-                self.lock.release()
+                    self.cond.notify()
+        if not stop_event.is_set():
+            stop_event.set()
 
     @staticmethod
-    def listen(weak_self, stop_event: threading.Event):
+    def apply_control(weak_self, stop_event: threading.Event):
         self = weak_self()
-        while not stop_event.is_set():
-            self.lock.acquire()
-            try:
-                if self.control is not None:
-                    self.ego_vehicle.apply_control(self.control)
-            except Exception as e:
-                logging.error(f"fail to apply control {self.control}, {e}")
-                stop_event.set()
-                break
-            finally:
-                self.lock.release()
+        while True:
+            with self.cond:
+                while (not self.control_is_ready) and (not stop_event.is_set()):
+                    self.cond.wait(0.1)
+
+                if stop_event.is_set():
+                    logging.info("stop event is set, thread apply_control exiting ...")
+                    break
+
+                if self.control_is_ready:
+                    try:
+                        self.ego_vehicle.apply_control(self.control)
+                        self.control_is_ready = False
+                    except Exception as e:
+                        logging.error(f"fail to apply control {self.control}, {e}")
+                        break
+        if not stop_event.is_set():
+            stop_event.set()
 
 
 class ApolloControlArgs:
@@ -145,7 +155,7 @@ def listen_and_apply_control(
 
     t2_stop_event = threading.Event()
     t2 = threading.Thread(
-        target=ApolloControl.listen,
+        target=ApolloControl.apply_control,
         args=(weak_self, t2_stop_event),
         daemon=False)
     t1.start()
