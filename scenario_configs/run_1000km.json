@@ -1,0 +1,4 @@
+{  
+    "config": "./scenario_configs/run_1000km.xml",
+    "scenario": "FreeRun"    
+}

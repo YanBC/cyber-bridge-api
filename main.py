@@ -2,7 +2,7 @@ import argparse
 import multiprocessing
 
 from utils import load_json, load_tree
-from simulation import start_simulation
+from simulation import startup_simulation
 
 
 def get_args():
@@ -93,7 +93,7 @@ def main(args: argparse.Namespace):
 
     # start simulation
     stop_event = multiprocessing.Event()
-    result = start_simulation(
+    result = startup_simulation(
         stop_event=stop_event,
         apollo_host=apollo_host,
         apollo_port=apollo_port,

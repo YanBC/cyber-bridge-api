@@ -22,6 +22,7 @@ from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
 from db.error_codes import ErrorCodes
+from dreamview_api import RouteManagement
 
 
 def destroy_all_sensors(world):
@@ -41,6 +42,10 @@ def logging_wrapper(func):
         logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
         if os.path.isfile(logfilepath):
             os.remove(logfilepath)
+        root = logging.getLogger()
+        if root.handlers:
+            for handler in root.handlers:
+                root.removeHandler(handler)
         logging.basicConfig(
                 filename=logfilepath,
                 level=logging.INFO,
@@ -67,6 +72,11 @@ def run_sensors(*args, **kwargs):
 @logging_wrapper
 def run_scenario(*args, **kwargs):
     return scenario_run(*args, **kwargs)
+
+
+# @logging_wrapper
+def startup_simulation(*args, **kwargs):
+    return start_simulation(*args, **kwargs)
 
 
 class SimulationArgs:
@@ -226,7 +236,7 @@ def start_simulation(
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
         # wait for ego to be created
-        get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
+        player, _ = get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
         if stop_event.is_set():
             scenario_run_result = scenario_runner_queue.get()
             result = NewSimulationResult(
@@ -282,12 +292,16 @@ def start_simulation(
 
         child_pid_file.close()
         clock = pygame.time.Clock()
+        manager_route = RouteManagement(player, end_waypoint, sim_world,
+                                        apollo_host, dreamview_port)
         while not stop_event.is_set():
             if fps < 0:
                 time.sleep(1)
             else:
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
+                manager_route.update()
+
     except Exception as e:
         logging.error(e)
         result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
