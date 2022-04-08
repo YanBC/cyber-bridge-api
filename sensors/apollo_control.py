@@ -48,15 +48,15 @@ class ApolloControl:
         self = weak_self()
         lastRcv = time.time()
         while not stop_event.is_set():
+            pbCls_list = self.bridge.recv_pb_messages()
+
+            if time.time() - lastRcv > self.timeout_rcv_cmd:
+                logging.error(f"Timeout[{self.timeout_rcv_cmd}] to receive control cmd")
+                stop_event.set()
+                break
+
+            self.lock.acquire()
             try:
-                pbCls_list = self.bridge.recv_pb_messages()
-
-                if time.time() - lastRcv > self.timeout_rcv_cmd:
-                    logging.error(f"Timeout[{self.timeout_rcv_cmd}] to receive control cmd")
-                    stop_event.set()
-                    break
-
-                self.lock.acquire()
                 if len(pbCls_list) == 0:
                     self.control = None
                     time.sleep(1e-3)    # sleep 1ms
@@ -65,7 +65,6 @@ class ApolloControl:
                     pbControl = pbCls_list[-1]
                     self.control = self._decoder.protobufToCarla(pbControl)
                     lastRcv = time.time()
-
             finally:
                 self.lock.release()
 
@@ -73,13 +72,12 @@ class ApolloControl:
     def listen(weak_self, stop_event: threading.Event):
         self = weak_self()
         while not stop_event.is_set():
+            self.lock.acquire()
             try:
-                self.lock.acquire()
-                if self.control is None:
-                     continue
-                self.ego_vehicle.apply_control(self.control)
+                if self.control is not None:
+                    self.ego_vehicle.apply_control(self.control)
             except Exception as e:
-                logging.error(f"apply_control listen exception.control:{self.control}")
+                logging.error(f"fail to apply control {self.control}, {e}")
                 stop_event.set()
                 break
             finally:
