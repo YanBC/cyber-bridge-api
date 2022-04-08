@@ -8,6 +8,8 @@ from typing import Tuple
 from types import SimpleNamespace
 import multiprocessing
 import xml.etree.ElementTree as ET
+import logging
+import functools
 
 
 def get_vehicle_by_role_name(
@@ -119,3 +121,24 @@ def get_simulator_version() -> str:
     with open(version_file) as f:
         version = f.read()
     return version.strip()
+
+
+def logging_wrapper(func):
+    @functools.wraps(func)
+    def wrapper(log_dir: str, name: str, *args, **kwargs):
+        if not os.path.isdir(log_dir):
+            os.makedirs(log_dir)
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
+        if os.path.isfile(logfilepath):
+            os.remove(logfilepath)
+        root = logging.Logger.root
+        for h in root.handlers[:]:
+            root.removeHandler(h)
+            h.close()
+        logging.basicConfig(
+                filename=logfilepath,
+                level=logging.INFO,
+                format='%(asctime)s %(message)s')
+        func(*args, **kwargs)
+    return wrapper

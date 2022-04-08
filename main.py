@@ -1,8 +1,10 @@
 import argparse
 import multiprocessing
+import logging
 
-from utils import load_json, load_tree
-from simulation import startup_simulation
+from utils import (
+    load_json, load_tree, logging_wrapper)
+from simulation import start_simulation
 
 
 def get_args():
@@ -73,8 +75,8 @@ def get_args():
     return args
 
 
+@logging_wrapper
 def main(args: argparse.Namespace):
-    # logging.basicConfig(level=logging.INFO)
     apollo_host = args.apollo_host
     apollo_port = args.apollo_port
     dreamview_port = args.dreamview_port
@@ -93,7 +95,8 @@ def main(args: argparse.Namespace):
 
     # start simulation
     stop_event = multiprocessing.Event()
-    result = startup_simulation(
+    logging.info(f"running scenario: {scenario_name}")
+    result = start_simulation(
         stop_event=stop_event,
         apollo_host=apollo_host,
         apollo_port=apollo_port,
@@ -109,10 +112,11 @@ def main(args: argparse.Namespace):
         ego_role_name=ego_role_name,
         carla_timeout=carla_timeout,
         show=show)
-    print(result.err_code)
-    print(result.criteria)
+    logging.info(f"err_code: {result.err_code}")
+    logging.info(f"criteria: {result.criteria}")
 
 
 if __name__ == "__main__":
     args = get_args()
-    main(args)
+    log_dir = args.log_dir
+    main(log_dir, 'main', args)
