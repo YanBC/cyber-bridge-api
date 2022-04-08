@@ -1,7 +1,5 @@
 import time
 import multiprocessing
-import os
-import functools
 import logging
 import pygame
 import xml.etree.ElementTree as ET
@@ -17,7 +15,9 @@ from sensors.utils import (
 from scenario_runner.scenario_runner import (
     ScenarioRunArgs, ScenarioRunError,
     scenario_run, ScenarioRunResults)
-from utils import load_json, get_vehicle_by_role_name
+from utils import (
+    load_json, get_vehicle_by_role_name,
+    logging_wrapper)
 from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
@@ -31,27 +31,6 @@ def destroy_all_sensors(world):
     for actor in sensor_list:
         if actor is not None:
             actor.destroy()
-
-
-def logging_wrapper(func):
-    @functools.wraps(func)
-    def wrapper(log_dir: str, name: str, *args, **kwargs):
-        if not os.path.isdir(log_dir):
-            os.makedirs(log_dir)
-        timestr = time.strftime("%Y%m%d-%H%M%S")
-        logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
-        if os.path.isfile(logfilepath):
-            os.remove(logfilepath)
-        root = logging.getLogger()
-        if root.handlers:
-            for handler in root.handlers:
-                root.removeHandler(handler)
-        logging.basicConfig(
-                filename=logfilepath,
-                level=logging.INFO,
-                format='%(asctime)s %(message)s')
-        func(*args, **kwargs)
-    return wrapper
 
 
 @logging_wrapper
