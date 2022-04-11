@@ -119,3 +119,14 @@ def get_simulator_version() -> str:
     with open(version_file) as f:
         version = f.read()
     return version.strip()
+
+
+def get_gnss_sensor(
+                stop_event: multiprocessing.Event,
+                carla_world: carla.World) -> carla.Actor:
+    while not stop_event.is_set():
+        print("Waiting for gnss sensor...")
+        time.sleep(1)
+        players = carla_world.get_actors().filter('sensor.other.gnss')
+        if players and len(players) > 0:
+            return players[0]
