@@ -70,6 +70,14 @@ def get_args():
                             "This flag is incompatible with --show and takes precedence "
                             "when both are specified. Also note that this flag is "
                             "best-effort-only. The actual fps would depends on the hardware")
+    argparser.add_argument(
+        '--sumo',
+        action='store_true',
+        help='enable sumo traffic flow')
+    argparser.add_argument(
+        '--sumo-config',
+        default='./sumo/examples/Town01.sumocfg',
+        help='path to apollo config file (default: apollo_configs/pnc_testing.json)')
     args = argparser.parse_args()
 
     return args
@@ -92,6 +100,8 @@ def main(args: argparse.Namespace):
     sr_config = load_json(args.configFile)
     scenario_name = sr_config['scenario']
     scenario_config_tree = load_tree(sr_config['config'])
+    enable_sumo = args.sumo
+    sumo_cfg = args.sumo_config
 
     # start simulation
     stop_event = multiprocessing.Event()
@@ -110,8 +120,10 @@ def main(args: argparse.Namespace):
         fps=fps,
         log_dir=log_dir,
         ego_role_name=ego_role_name,
-        carla_timeout=carla_timeout,
-        show=show)
+        carla_timeout=carla_timeout,    
+        show=show,
+        enable_sumo=enable_sumo,
+        sumo_cfg=sumo_cfg)
     logging.info(f"err_code: {result.err_code}")
     logging.info(f"criteria: {result.criteria}")
 

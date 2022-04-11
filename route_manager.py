@@ -16,6 +16,13 @@ class RouteManagerError(enum.Enum):
     USER_INTERRUPT = 5001
 
 
+class RouteManagerResults:
+    def __init__(
+            self,
+            err_code=RouteManagerError.SUCCESS) -> None:
+        self.err_code = err_code
+
+
 class RouteManagerArgs:
     def __init__(
                 self,
@@ -163,10 +170,8 @@ def route_manager(args: RouteManagerArgs,
     try:
         while not stop_event.is_set():
             sim_world.wait_for_tick()
-            if loop_routing:                
+            if loop_routing:
                 manager_route.route_update()
-            # else:
-            #     break
 
     except Exception as e:
         if isinstance(e, KeyboardInterrupt):

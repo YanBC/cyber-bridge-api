@@ -22,7 +22,8 @@ from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
 from db.error_codes import ErrorCodes
-from route_manager import RouteManagement, RouteManagerArgs, route_manager
+from route_manager import RouteManagerArgs, RouteManagerResults, route_manager
+from sumo.sumo_runner import IntegratedSumoArgs, IntegratedSumoResults, sumo_run
 
 
 def destroy_all_sensors(world):
@@ -59,6 +60,11 @@ def startup_simulation(*args, **kwargs):
 
 
 @logging_wrapper
+def run_sumo(*args, **kwargs):
+    return sumo_run(*args, **kwargs)
+
+
+@logging_wrapper
 def run_route_manager(*args, **kwargs):
     return route_manager(*args, **kwargs)
 
@@ -83,7 +89,9 @@ class SimulationResult:
 def NewSimulationResult(
         scenario_run_result: ScenarioRunResults,
         control_sensor_result: ApolloControlResults,
-        carla_sensors_result: CarlaSensorsResults
+        carla_sensors_result: CarlaSensorsResults,
+        route_manager_result: RouteManagerResults,
+        integrated_sumo_result: IntegratedSumoResults
     ) -> SimulationResult:
     return SimulationResult()
 
@@ -111,7 +119,9 @@ def start_simulation(
             log_dir='./log',
             ego_role_name='hero',
             carla_timeout=20.0,
-            show=False) -> SimulationResult:
+            show=False,
+            enable_sumo=False,
+            sumo_cfg=None) -> SimulationResult:
     #########################
     # Parse arguments
     #########################
@@ -206,6 +216,8 @@ def start_simulation(
     scenario_run_result = ScenarioRunResults()
     control_sensor_result = ApolloControlResults()
     carla_sensors_result = CarlaSensorsResults()
+    route_manager_result = RouteManagerResults()
+    integrated_sumo_result = IntegratedSumoResults()
     try:
         scenario_runner_args = ScenarioRunArgs(
                 host=carla_host,
@@ -223,13 +235,15 @@ def start_simulation(
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
         # wait for ego to be created
-        player, _ = get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
+        get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
         if stop_event.is_set():
             scenario_run_result = scenario_runner_queue.get()
             result = NewSimulationResult(
                     scenario_run_result,
                     control_sensor_result,
-                    carla_sensors_result)
+                    carla_sensors_result,
+                    route_manager_result,
+                    integrated_sumo_result)
             return result
 
         if show and fps < 0:
@@ -241,6 +255,26 @@ def start_simulation(
             child_pid_file.write(f"viewer pid: {viewer.pid}\n")
         else:
             pygame.init()
+
+        if enable_sumo:
+            if not sumo_cfg:
+                logging.error("Missing sumo config file")
+            else:
+               integrate_sumo_args = IntegratedSumoArgs(
+                    ego_name=ego_role_name,
+                    carla_host=carla_host,
+                    carla_port=carla_port,
+                    sumo_cfg=sumo_cfg
+               )
+               integrate_sumo_queue = multiprocessing.Queue()
+               integrate_sumo = multiprocessing.Process(
+                                    target=run_sumo,
+                                    args=(log_dir, "integrate_sumo",
+                                    integrate_sumo_args,
+                                    stop_event,
+                                    integrate_sumo_queue))
+               integrate_sumo.start()
+               child_pid_file.write(f"control_sensor pid: {integrate_sumo.pid}\n")
 
         control_sensor_args = ApolloControlArgs(
                 ego_name=ego_role_name,
@@ -317,10 +351,15 @@ def start_simulation(
         scenario_run_result = scenario_runner_queue.get()
         control_sensor_result = control_sensor_queue.get()
         carla_sensors_result = carla_sensors_queue.get()
+        route_manager_result = route_manager_queue.get()
+        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else None
+
         result = NewSimulationResult(
                 scenario_run_result=scenario_run_result,
                 control_sensor_result=control_sensor_result,
-                carla_sensors_result=carla_sensors_result)
+                carla_sensors_result=carla_sensors_result,
+                route_manager_result=route_manager_result,
+                integrated_sumo_result=integrated_sumo_result)
 
     #########################
     # Clean up
