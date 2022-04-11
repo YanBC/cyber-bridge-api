@@ -22,7 +22,7 @@ from srunner.tools.scenario_parser \
     import ScenarioConfigurationParser as SrCfgP
 from dreamview_api import setup_apollo, reset_apollo
 from db.error_codes import ErrorCodes
-from dreamview_api import RouteManagement
+from route_manager import RouteManagement, RouteManagerArgs, route_manager
 
 
 def destroy_all_sensors(world):
@@ -56,6 +56,11 @@ def run_scenario(*args, **kwargs):
 # @logging_wrapper
 def startup_simulation(*args, **kwargs):
     return start_simulation(*args, **kwargs)
+
+
+@logging_wrapper
+def run_route_manager(*args, **kwargs):
+    return route_manager(*args, **kwargs)
 
 
 class SimulationArgs:
@@ -156,6 +161,7 @@ def start_simulation(
     #########################
     # Setup
     #########################
+    loop_routing = False
     try:
         client = carla.Client(carla_host, carla_port)
         client.set_timeout(carla_timeout)
@@ -173,6 +179,8 @@ def start_simulation(
         if dst_x is not None:
             end_waypoint = sim_map.get_waypoint(
                 carla.Location(x=dst_x, y=dst_y, z=dst_z))
+            if dst_x == 0 and dst_y == 0 and dst_z == 0:
+                loop_routing = True
         else:
             end_waypoint = None
         if not setup_apollo(
@@ -269,24 +277,39 @@ def start_simulation(
         carla_sensors.start()
         child_pid_file.write(f"carla_sensors pid: {carla_sensors.pid}\n")
 
+        route_manager_args = RouteManagerArgs(
+            ego_name=ego_role_name,
+            end_waypoint=end_waypoint,
+            carla_host=carla_host,
+            carla_port=carla_port,
+            apollo_host=apollo_host,
+            dreamview_port=dreamview_port,
+            loop_routing=loop_routing
+        )
+        route_manager_queue = multiprocessing.Queue()
+        route_manager = multiprocessing.Process(
+                            target=run_route_manager,
+                            args=(log_dir, "route_manager",
+                                  route_manager_args,
+                                  stop_event,
+                                  route_manager_queue))
+        route_manager.start()
+        child_pid_file.write(f"route manager pid: {route_manager.pid}\n")
         child_pid_file.close()
+
         clock = pygame.time.Clock()
-        if scenario_configs[0].type == "FreeRun":
-            manager_route = RouteManagement(player, end_waypoint, sim_world,
-                                            apollo_host, dreamview_port)
         while not stop_event.is_set():
             if fps < 0:
                 time.sleep(1)
             else:
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
-                if scenario_configs[0].type == "FreeRun":
-                    manager_route.update()
 
     except Exception as e:
         logging.error(e)
         result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
         return result
+
     finally:
         if not stop_event.is_set():
             stop_event.set()
