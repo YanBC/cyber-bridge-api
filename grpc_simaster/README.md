@@ -12,6 +12,7 @@ python -m grpc_tools.protoc \
 ```
 
 ## Example run
+Start simaster server:
 ```bash
 python start_simaster.py
 ```

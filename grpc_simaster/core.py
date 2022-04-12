@@ -36,28 +36,6 @@ def get_configs(
         return success, scenario_name, xml_tree, sensor_config, apollo_config
 
 
-def get_servers(endpoint):
-    success = True
-    stop_event = multiprocessing.Event()
-    apollo_host = ""
-    bridge_port = 9090
-    dreamview_port = 8888
-    carla_host = ""
-    carla_port = 2000
-    try:
-        # TODO
-        # duration is hardcoded to 5 mins because there is
-        # no way to tell how long a simulation will run
-        # for now.
-        apollo_host, carla_host = acquire_servers(
-            stop_event, endpoint, duration=60*5)
-    except Exception as e:
-        success = False
-        logging.error(f"error in acquiring servers, {e}")
-    finally:
-        return success, stop_event, apollo_host, bridge_port, dreamview_port, carla_host, carla_port
-
-
 def write_to_db(
         db_user,
         db_password,
@@ -144,7 +122,8 @@ def run_scenario(
         centre_endpoint: str,
         scenario_config_id: str,
         sensor_config_id: str,
-        apollo_config_id: str) -> ErrorCodes:
+        apollo_config_id: str,
+        log_dir: str) -> ErrorCodes:
     err_code: ErrorCodes = ErrorCodes.SUCCESS
     criteria = []
 
@@ -200,7 +179,6 @@ def run_scenario(
 
         # using default configs
         fps = 50
-        log_dir='./log'
         ego_role_name='hero'
         carla_timeout=20.0
         show=False
@@ -209,15 +187,15 @@ def run_scenario(
         # duration is hardcoded to 5 mins because there is
         # no way to tell how long a simulation will run
         # for now.
+        apollo_host = ""
+        apollo_port = 9090
+        dreamview_port = 8888
+        carla_host = ""
+        carla_port = 2000
         apollo_host, carla_host = acquire_servers(
             stop_event, centre_endpoint, duration=60*5)
         logging.info(f"acquired apollo server: {apollo_host}; "
-                    f"carla server :{carla_host}")
-        carla_host = carla_host
-        carla_port = 2000
-        apollo_host = apollo_host
-        apollo_port = 9090
-        dreamview_port = 8888
+                    f"carla server: {carla_host}")
 
     except Exception as e:
         logging.error(f"unknown error in acquiring servers, {e}")
@@ -243,6 +221,7 @@ def run_scenario(
     ############################################################
     # start simulation
     ############################################################
+    logging.info(f"start simulation, task_id: {task_id}")
     start_time = create_timestamp()
     result = start_simulation(
         stop_event=stop_event,
@@ -262,6 +241,8 @@ def run_scenario(
         show=show)
     if not stop_event.is_set():
         stop_event.set()
+    logging.info(f"finish simulation, task_id: {task_id}")
+    logging.info(f"simulation result: {result.err_code}")
 
     end_time = create_timestamp()
     err_code = result.err_code
