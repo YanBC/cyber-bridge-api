@@ -274,7 +274,7 @@ def start_simulation(
                                     stop_event,
                                     integrate_sumo_queue))
                integrate_sumo.start()
-               child_pid_file.write(f"control_sensor pid: {integrate_sumo.pid}\n")
+               child_pid_file.write(f"integrate_sumo pid: {integrate_sumo.pid}\n")
 
         control_sensor_args = ApolloControlArgs(
                 ego_name=ego_role_name,
