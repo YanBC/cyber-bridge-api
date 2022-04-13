@@ -274,7 +274,7 @@ def start_simulation(
                                     stop_event,
                                     integrate_sumo_queue))
                integrate_sumo.start()
-               child_pid_file.write(f"control_sensor pid: {integrate_sumo.pid}\n")
+               child_pid_file.write(f"integrate_sumo pid: {integrate_sumo.pid}\n")
 
         control_sensor_args = ApolloControlArgs(
                 ego_name=ego_role_name,
@@ -352,7 +352,7 @@ def start_simulation(
         control_sensor_result = control_sensor_queue.get()
         carla_sensors_result = carla_sensors_queue.get()
         route_manager_result = route_manager_queue.get()
-        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else None
+        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else IntegratedSumoResults()
 
         result = NewSimulationResult(
                 scenario_run_result=scenario_run_result,
