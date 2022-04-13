@@ -352,7 +352,7 @@ def start_simulation(
         control_sensor_result = control_sensor_queue.get()
         carla_sensors_result = carla_sensors_queue.get()
         route_manager_result = route_manager_queue.get()
-        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else None
+        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else IntegratedSumoResults()
 
         result = NewSimulationResult(
                 scenario_run_result=scenario_run_result,

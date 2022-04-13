@@ -205,39 +205,6 @@ def reset_apollo(
     return
 
 
-def test_routing_req(dreamview_ip, dreamview_port):
-    url = f"ws://{dreamview_ip}:{dreamview_port}/websocket"
-    ws = create_connection(url)
-    json_msg = json.dumps({
-            "type": "SendRoutingRequest",
-            "start": {
-                "x": 88.279495239,
-                "y": -3.262422562,
-                "z": 0
-            },
-            "end": {
-                "x": 119.470161438,
-                "y": -129.422973633,
-                "z": 0
-            },
-            # "waypoint":[]
-            "waypoint": [
-                {
-                    "x": 87.586204529,
-                    "y": -4.504424095,
-                    "z": 0
-                },
-                {
-                    "x": 87.713882446,
-                    "y": -14.213335037,
-                    "z": 0
-                }
-            ]
-        })
-    print("{}".format(json_msg))
-    ws.send(json_msg)
-
-
 if __name__ == '__main__':
     dreamview_ip = "172.17.0.23"
     dreamview_port = 8888
