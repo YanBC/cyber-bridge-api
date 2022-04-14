@@ -94,8 +94,8 @@ class SimulationSynchronization(object):
         # self.carla.world.apply_settings(settings)
         # print("world.setting:{}".format(settings))  # tested same with world
 
-        traffic_manager = self.carla.client.get_trafficmanager()
-        traffic_manager.set_synchronous_mode(True)
+        # traffic_manager = self.carla.client.get_trafficmanager()
+        # traffic_manager.set_synchronous_mode(True)
 
     def tick(self):
         """
