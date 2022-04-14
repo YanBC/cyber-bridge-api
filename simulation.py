@@ -160,8 +160,25 @@ def start_simulation(
         result.set_err_code(ErrorCodes.CONFIG_ERROR)
         return result
 
+    logging.info("parsed arguments")
+
     sim_world = None
     child_pid_file = open("pids.txt", "w")
+
+    # Try to clean up. Best effort only.
+    # If it fails, it fials.
+    def cleanup():
+        if not stop_event.is_set():
+            stop_event.set()
+        reset_apollo(apollo_host, dreamview_port, apollo_modules)
+        if sim_world is not None:
+            settings = sim_world.get_settings()
+            settings.synchronous_mode = False
+            settings.fixed_delta_seconds = None
+            sim_world.apply_settings(settings)
+            destroy_all_sensors(sim_world)
+        if not show:
+            pygame.quit()
 
     #########################
     # Setup
@@ -195,12 +212,16 @@ def start_simulation(
                 start_waypoint,
                 end_waypoint):
             logging.error("Apollo setup fail. Exiting ...")
+            cleanup()
             result.set_err_code(ErrorCodes.APOLLO_BOOSTRAP_ERROR)
             return result
     except Exception as e:
         logging.error(f"fail in simulation setup, {e}")
+        cleanup()
         result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
         return result
+
+    logging.info("setup apollo")
 
     #########################
     # Process
@@ -227,8 +248,8 @@ def start_simulation(
         child_pid_file.write(f"scenario_runner pid: {scenario_runner.pid}\n")
 
         # wait for ego to be created
-        get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
-        if stop_event.is_set():
+        player, _ = get_vehicle_by_role_name(stop_event, __name__, sim_world, ego_role_name)
+        if player is None:
             scenario_run_result = scenario_runner_queue.get()
             result = NewSimulationResult(
                     scenario_run_result,
@@ -320,6 +341,24 @@ def start_simulation(
         child_pid_file.write(f"carla_sensors pid: {carla_sensors.pid}\n")
 
         child_pid_file.close()
+
+    except Exception as e:
+        logging.error(e)
+        cleanup()
+        result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
+        return result
+
+    finally:
+        if not child_pid_file.closed:
+            child_pid_file.close()
+
+    logging.info("create child processes")
+
+    #########################
+    # Simulation
+    #########################
+    try:
+        logging.info("running simulation")
         clock = pygame.time.Clock()
         while not stop_event.is_set():
             if fps < 0:
@@ -341,36 +380,13 @@ def start_simulation(
                 carla_sensors_result=carla_sensors_result,
                 route_manager_result=route_manager_result,
                 integrated_sumo_result=integrated_sumo_result)
+        return result
 
     except Exception as e:
         logging.error(e)
-        result.set_err_code(ErrorCodes.UNKNOWN_ERROR)
+        error_code = ScenarioRunError.UNKNOWN_ERROR
+        result.set_err_code(error_code)
         return result
 
     finally:
-        if not stop_event.is_set():
-            stop_event.set()
-
-        if not child_pid_file.closed:
-            child_pid_file.close()
-
-    #########################
-    # Clean up
-    #########################
-    # Try to clean up. Best effort only.
-    # If it fails, it fials.
-    try:
-        reset_apollo(apollo_host, dreamview_port, apollo_modules)
-
-        if sim_world is not None:
-            settings = sim_world.get_settings()
-            settings.synchronous_mode = False
-            settings.fixed_delta_seconds = None
-            sim_world.apply_settings(settings)
-            destroy_all_sensors(sim_world)
-        if not show:
-            pygame.quit()
-    except Exception as e:
-        logging.error(f"error in simulation cleanup, {e}")
-
-    return result
+        cleanup()
