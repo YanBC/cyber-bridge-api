@@ -1,9 +1,7 @@
 <?xml version="1.0" ?>
 <scenarios>
-  <scenario name="FreeRun" town="Town01" type="FreeRun">    
-    <!-- <ego_vehicle model="vehicle.tesla.model3" x="392.30" y="177.659" yaw="90" z="3"/> -->
+  <scenario name="FreeRun" town="Town01" type="FreeRun">
     <ego_vehicle model="vehicle.tesla.model3" x="92.46" y="170" yaw="270" z="3"/>
-    <destination x="0" y="0" z="0" />
     <game_playtime>10000000.0</game_playtime>
   </scenario>
 </scenarios>

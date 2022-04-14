@@ -54,11 +54,6 @@ def run_scenario(*args, **kwargs):
     return scenario_run(*args, **kwargs)
 
 
-# @logging_wrapper
-def startup_simulation(*args, **kwargs):
-    return start_simulation(*args, **kwargs)
-
-
 @logging_wrapper
 def run_sumo(*args, **kwargs):
     return sumo_run(*args, **kwargs)
@@ -120,8 +115,8 @@ def start_simulation(
             ego_role_name='hero',
             carla_timeout=20.0,
             show=False,
-            enable_sumo=False,
-            sumo_cfg=None) -> SimulationResult:
+            sumo_cfg="",
+            loop=False) -> SimulationResult:
     #########################
     # Parse arguments
     #########################
@@ -171,7 +166,6 @@ def start_simulation(
     #########################
     # Setup
     #########################
-    loop_routing = False
     try:
         client = carla.Client(carla_host, carla_port)
         client.set_timeout(carla_timeout)
@@ -189,8 +183,6 @@ def start_simulation(
         if dst_x is not None:
             end_waypoint = sim_map.get_waypoint(
                 carla.Location(x=dst_x, y=dst_y, z=dst_z))
-            if dst_x == 0 and dst_y == 0 and dst_z == 0:
-                loop_routing = True
         else:
             end_waypoint = None
         if not setup_apollo(
@@ -256,25 +248,41 @@ def start_simulation(
         else:
             pygame.init()
 
-        if enable_sumo:
-            if not sumo_cfg:
-                logging.error("Missing sumo config file")
-            else:
-               integrate_sumo_args = IntegratedSumoArgs(
-                    ego_name=ego_role_name,
-                    carla_host=carla_host,
-                    carla_port=carla_port,
-                    sumo_cfg=sumo_cfg
-               )
-               integrate_sumo_queue = multiprocessing.Queue()
-               integrate_sumo = multiprocessing.Process(
-                                    target=run_sumo,
-                                    args=(log_dir, "integrate_sumo",
-                                    integrate_sumo_args,
+        if sumo_cfg != "":
+            integrate_sumo_args = IntegratedSumoArgs(
+                ego_name=ego_role_name,
+                carla_host=carla_host,
+                carla_port=carla_port,
+                sumo_cfg=sumo_cfg
+            )
+            integrate_sumo_queue = multiprocessing.Queue()
+            integrate_sumo = multiprocessing.Process(
+                                target=run_sumo,
+                                args=(log_dir, "integrate_sumo",
+                                integrate_sumo_args,
+                                stop_event,
+                                integrate_sumo_queue))
+            integrate_sumo.start()
+            child_pid_file.write(f"integrate_sumo pid: {integrate_sumo.pid}\n")
+
+        if loop:
+            route_manager_args = RouteManagerArgs(
+                ego_name=ego_role_name,
+                carla_host=carla_host,
+                carla_port=carla_port,
+                apollo_host=apollo_host,
+                dreamview_port=dreamview_port,
+                end_waypoint=end_waypoint
+            )
+            route_manager_queue = multiprocessing.Queue()
+            route_manager = multiprocessing.Process(
+                                target=run_route_manager,
+                                args=(log_dir, "route_manager",
+                                    route_manager_args,
                                     stop_event,
-                                    integrate_sumo_queue))
-               integrate_sumo.start()
-               child_pid_file.write(f"integrate_sumo pid: {integrate_sumo.pid}\n")
+                                    route_manager_queue))
+            route_manager.start()
+            child_pid_file.write(f"route manager pid: {route_manager.pid}\n")
 
         control_sensor_args = ApolloControlArgs(
                 ego_name=ego_role_name,
@@ -311,26 +319,7 @@ def start_simulation(
         carla_sensors.start()
         child_pid_file.write(f"carla_sensors pid: {carla_sensors.pid}\n")
 
-        route_manager_args = RouteManagerArgs(
-            ego_name=ego_role_name,
-            end_waypoint=end_waypoint,
-            carla_host=carla_host,
-            carla_port=carla_port,
-            apollo_host=apollo_host,
-            dreamview_port=dreamview_port,
-            loop_routing=loop_routing
-        )
-        route_manager_queue = multiprocessing.Queue()
-        route_manager = multiprocessing.Process(
-                            target=run_route_manager,
-                            args=(log_dir, "route_manager",
-                                  route_manager_args,
-                                  stop_event,
-                                  route_manager_queue))
-        route_manager.start()
-        child_pid_file.write(f"route manager pid: {route_manager.pid}\n")
         child_pid_file.close()
-
         clock = pygame.time.Clock()
         while not stop_event.is_set():
             if fps < 0:
@@ -338,6 +327,20 @@ def start_simulation(
             else:
                 clock.tick_busy_loop(fps)
                 sim_world.tick()
+
+        scenario_run_result = scenario_runner_queue.get()
+        control_sensor_result = control_sensor_queue.get()
+        carla_sensors_result = carla_sensors_queue.get()
+        if loop:
+            route_manager_result = route_manager_queue.get()
+        if sumo_cfg != "":
+            integrated_sumo_result = integrate_sumo_queue.get()
+        result = NewSimulationResult(
+                scenario_run_result=scenario_run_result,
+                control_sensor_result=control_sensor_result,
+                carla_sensors_result=carla_sensors_result,
+                route_manager_result=route_manager_result,
+                integrated_sumo_result=integrated_sumo_result)
 
     except Exception as e:
         logging.error(e)
@@ -348,18 +351,8 @@ def start_simulation(
         if not stop_event.is_set():
             stop_event.set()
 
-        scenario_run_result = scenario_runner_queue.get()
-        control_sensor_result = control_sensor_queue.get()
-        carla_sensors_result = carla_sensors_queue.get()
-        route_manager_result = route_manager_queue.get()
-        integrated_sumo_result = integrate_sumo_queue.get() if enable_sumo else IntegratedSumoResults()
-
-        result = NewSimulationResult(
-                scenario_run_result=scenario_run_result,
-                control_sensor_result=control_sensor_result,
-                carla_sensors_result=carla_sensors_result,
-                route_manager_result=route_manager_result,
-                integrated_sumo_result=integrated_sumo_result)
+        if not child_pid_file.closed:
+            child_pid_file.close()
 
     #########################
     # Clean up
@@ -368,8 +361,7 @@ def start_simulation(
     # If it fails, it fials.
     try:
         reset_apollo(apollo_host, dreamview_port, apollo_modules)
-        if not child_pid_file.closed:
-            child_pid_file.close()
+
         if sim_world is not None:
             settings = sim_world.get_settings()
             settings.synchronous_mode = False

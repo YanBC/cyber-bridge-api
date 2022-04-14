@@ -27,25 +27,26 @@ class RouteManagerArgs:
     def __init__(
                 self,
                 ego_name: str,
-                end_waypoint: carla.Waypoint,
                 carla_host: str,
                 carla_port: int,
                 apollo_host: str,
                 dreamview_port: int,
-                loop_routing=False) -> None:
+                end_waypoint: carla.Waypoint) -> None:
         self.ego_name = ego_name
-        self.end_waypoint = end_waypoint
         self.carla_host = carla_host
         self.carla_port = carla_port
         self.apollo_host = apollo_host
         self.dreamview_port = dreamview_port
-        self.loop_routing = loop_routing
+        self.end_waypoint = end_waypoint
 
 
 class RouteManagement:
+    min_distance_to_destination = 10.0  # m, at least 10m
+
     def __init__(self,
             actor: carla.Actor,
             world: carla.World,
+            dst: carla.Waypoint,
             ip: str,
             port: int = 8888):
         self.url = f"ws://{ip}:{port}/websocket"
@@ -53,7 +54,7 @@ class RouteManagement:
         self.actor = actor
         self.map = world.get_map()
         self.spawn_points = self.map.get_spawn_points()
-        self.min_distance_to_destination = 10.0  # m, at least 10m
+        self.current_dst = dst.transform.location
 
     def __del__(self):
         self.ws.close()
@@ -64,29 +65,6 @@ class RouteManagement:
         wp_dir = wp.transform.get_forward_vector()
         dot_ve_wp = ve_dir.x * wp_dir.x + ve_dir.y * wp_dir.y + ve_dir.z * wp_dir.z
         return True if dot_ve_wp > 0 else False
-
-    def init_route(self,
-            start_pos: carla.Location,
-            end_pos: carla.Location):
-        start_location = start_pos
-        end_location = end_pos
-        json_msg = json.dumps({
-            "type": "SendRoutingRequest",
-            "start": {
-                "x": start_location.x,
-                "y": -start_location.y,
-                "z": 0
-            },
-            "end": {
-                "x": end_location.x,
-                "y": -end_location.y,
-                "z": 0
-            },
-            "waypoint": []
-        })
-        logging.info(f"{json_msg}")
-        self.ws.send(json_msg)
-        self.current_dst = end_pos
 
     def route_update(self) -> None:
         actor_location = self.actor.get_location()
@@ -147,12 +125,11 @@ def route_manager(args: RouteManagerArgs,
             stop_event: multiprocessing.Event,
             output_queue: multiprocessing.Queue):
     ego_name = args.ego_name
-    end_pos = args.end_waypoint.transform.location
     carla_host = args.carla_host
     carla_port = args.carla_port
     apollo_host = args.apollo_host
     dreamview_port = args.dreamview_port
-    loop_routing = args.loop_routing
+    end_waypoint = args.end_waypoint
 
     client = carla.Client(carla_host, carla_port)
     client.set_timeout(4.0)
@@ -161,17 +138,14 @@ def route_manager(args: RouteManagerArgs,
     get_vehicle_by_role_name(
             stop_event, __name__, sim_world, ego_name)
     gnss_sensor = get_gnss_sensor(stop_event, sim_world)
-    start_pos = gnss_sensor.get_location()
-    manager_route = RouteManagement(gnss_sensor, sim_world,
+    manager_route = RouteManagement(gnss_sensor, sim_world, end_waypoint,
                                     apollo_host, dreamview_port)
-    manager_route.init_route(start_pos, end_pos)
     error_code = RouteManagerError.SUCCESS
 
     try:
         while not stop_event.is_set():
             sim_world.wait_for_tick()
-            if loop_routing:
-                manager_route.route_update()
+            manager_route.route_update()
 
     except Exception as e:
         if isinstance(e, KeyboardInterrupt):

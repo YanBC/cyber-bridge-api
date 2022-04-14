@@ -191,8 +191,8 @@ def setup_apollo(
     # make sure apollo modules are set up
     # before routing request is sent
     time.sleep(5)
-    # if end_pos is not None:
-    #     conn.set_destination(start_pos, end_pos)
+    if end_pos is not None:
+        conn.set_destination(start_pos, end_pos)
     return True
 
 
