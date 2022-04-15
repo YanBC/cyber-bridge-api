@@ -1,7 +1,8 @@
 import sys
 import argparse
 from grpc_simaster.server import serve_Simaster
-from utils import load_json, get_simulator_version
+from utils import (
+    load_json, get_simulator_version)
 
 
 def get_args():
@@ -9,6 +10,11 @@ def get_args():
     p.add_argument("--config", type=str,
                 default="./simaster_config.json",
                 help="path to configuration file")
+    p.add_argument('--log-dir',
+                default="./logs",
+                help='where to store log files')
+    # p.add_argument('--debug', action='store_true',
+    #             help="set debug mode")
     p.add_argument('-v', action='store_true',
                 help="show version")
     return p.parse_args()
@@ -22,6 +28,7 @@ if __name__ == "__main__":
         print(version)
         sys.exit(0)
 
+    log_dir = args.log_dir
     config = load_json(args.config)
     grpc_host = config['host']
     grpc_port = config['port']
@@ -47,5 +54,6 @@ if __name__ == "__main__":
         db_host=db_host,
         db_port=db_port,
         database=database,
-        centre_endpoint=nacos_endpoint
+        centre_endpoint=nacos_endpoint,
+        log_dir=log_dir
     )

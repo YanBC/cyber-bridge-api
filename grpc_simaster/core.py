@@ -36,28 +36,6 @@ def get_configs(
         return success, scenario_name, xml_tree, sensor_config, apollo_config
 
 
-def get_servers(endpoint):
-    success = True
-    stop_event = multiprocessing.Event()
-    apollo_host = ""
-    bridge_port = 9090
-    dreamview_port = 8888
-    carla_host = ""
-    carla_port = 2000
-    try:
-        # TODO
-        # duration is hardcoded to 5 mins because there is
-        # no way to tell how long a simulation will run
-        # for now.
-        apollo_host, carla_host = acquire_servers(
-            stop_event, endpoint, duration=60*5)
-    except Exception as e:
-        success = False
-        logging.error(f"error in acquiring servers, {e}")
-    finally:
-        return success, stop_event, apollo_host, bridge_port, dreamview_port, carla_host, carla_port
-
-
 def write_to_db(
         db_user,
         db_password,
@@ -80,9 +58,13 @@ def write_to_db(
         start_time: str = None,
         end_time: str = None,
         ego: str = None,
-        criteria: dict = None) -> bool:
+        criteria: list = []) -> bool:
     cnx = create_connection(
-        db_user, db_password, db_host, db_port, database)
+            user=db_user,
+            password=db_password,
+            host=db_host,
+            port=db_port,
+            database=database)
     e_code = error_code.value
     try:
         save_result(
@@ -104,6 +86,7 @@ def write_to_db(
             end_time,
             ego,
             criteria)
+        cnx.commit()
         return True
     except Exception as e:
         logging.error(f"fail to write db, {e}")
@@ -122,6 +105,7 @@ def is_task_exist(cnx, task_id: int) -> bool:
     sql = "SELECT task_id FROM results WHERE task_id = %s"
     cursor = cnx.cursor()
     cursor.execute(sql, (task_id,))
+    cursor.fetchone()
     num_entry = cursor.rowcount
     cursor.close()
     return num_entry != 0
@@ -138,7 +122,8 @@ def run_scenario(
         centre_endpoint: str,
         scenario_config_id: str,
         sensor_config_id: str,
-        apollo_config_id: str) -> ErrorCodes:
+        apollo_config_id: str,
+        log_dir: str) -> ErrorCodes:
     err_code: ErrorCodes = ErrorCodes.SUCCESS
     criteria = []
 
@@ -164,6 +149,7 @@ def run_scenario(
     ############################################################
     # query services registry and configuration centre
     ############################################################
+    stop_event = multiprocessing.Event()
     try:
         scenario_name, xml_tree = get_scenario_config(
                 centre_endpoint, scenario_config_id)
@@ -193,7 +179,6 @@ def run_scenario(
 
         # using default configs
         fps = 50
-        log_dir='./log'
         ego_role_name='hero'
         carla_timeout=20.0
         show=False
@@ -202,14 +187,15 @@ def run_scenario(
         # duration is hardcoded to 5 mins because there is
         # no way to tell how long a simulation will run
         # for now.
-        stop_event = multiprocessing.Event()
-        apollo_host, carla_host = acquire_servers(
-            stop_event, centre_endpoint, duration=60*5)
-        carla_host = carla_host
-        carla_port = 2000
-        apollo_host = apollo_host
+        apollo_host = ""
         apollo_port = 9090
         dreamview_port = 8888
+        carla_host = ""
+        carla_port = 2000
+        apollo_host, carla_host = acquire_servers(
+            stop_event, centre_endpoint, duration=60*5)
+        logging.info(f"acquired apollo server: {apollo_host}; "
+                    f"carla server: {carla_host}")
 
     except Exception as e:
         logging.error(f"unknown error in acquiring servers, {e}")
@@ -235,6 +221,7 @@ def run_scenario(
     ############################################################
     # start simulation
     ############################################################
+    logging.info(f"start simulation, task_id: {task_id}")
     start_time = create_timestamp()
     result = start_simulation(
         stop_event=stop_event,
@@ -252,6 +239,11 @@ def run_scenario(
         ego_role_name=ego_role_name,
         carla_timeout=carla_timeout,
         show=show)
+    if not stop_event.is_set():
+        stop_event.set()
+    logging.info(f"finish simulation, task_id: {task_id}")
+    logging.info(f"simulation result: {result.err_code}")
+
     end_time = create_timestamp()
     err_code = result.err_code
     criteria = result.criteria

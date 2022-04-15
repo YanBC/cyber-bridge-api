@@ -113,7 +113,7 @@ def save_result(
             start_time,
             end_time,
             ego,
-            criteria: dict):
+            criteria: list):
     try:
         _insert_reulsts(cnx, task_id, simulator_version, carla_version, carla_ip, carla_port, apollo_version, apollo_ip, dreamview_port, bridge_port, error_code, sensors_config_id, start_time, end_time, ego, scenario_id, apollo_config_id)
         for c in criteria:

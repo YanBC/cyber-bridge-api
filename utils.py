@@ -10,6 +10,7 @@ import multiprocessing
 import xml.etree.ElementTree as ET
 import logging
 import functools
+from datetime import datetime
 
 
 def get_vehicle_by_role_name(
@@ -128,7 +129,7 @@ def logging_wrapper(func):
     def wrapper(log_dir: str, name: str, *args, **kwargs):
         if not os.path.isdir(log_dir):
             os.makedirs(log_dir)
-        timestr = time.strftime("%Y%m%d-%H%M%S")
+        timestr = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         logfilepath = os.path.join(log_dir, f"{name}.{timestr}.log")
         if os.path.isfile(logfilepath):
             os.remove(logfilepath)

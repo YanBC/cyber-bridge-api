@@ -111,7 +111,7 @@ def start_simulation(
             # apollo_configs/pnc_testing.json
             apollo_config: dict,
             fps=50,
-            log_dir='./log',
+            log_dir='./logs',
             ego_role_name='hero',
             carla_timeout=20.0,
             show=False,

@@ -138,6 +138,7 @@ def get_scenario_config(
         endpoint: str,
         config_id: str) -> Tuple[str, ET.ElementTree]:
     config = query_config(endpoint, config_id)
+    logging.info(f"get scenario config: {config}")
     if config is None:
         return "", None
 
@@ -149,10 +150,14 @@ def get_scenario_config(
 def get_sensor_config(
         endpoint: str,
         config_id: str) -> dict:
-    return query_config(endpoint, config_id)
+    config = query_config(endpoint, config_id)
+    logging.info(f"get sensor config: {config}")
+    return config
 
 
 def get_apollo_config(
         endpoint: str,
         config_id: str) -> dict:
-    return query_config(endpoint, config_id)
+    config =  query_config(endpoint, config_id)
+    logging.info(f"get apollo config: {config}")
+    return config

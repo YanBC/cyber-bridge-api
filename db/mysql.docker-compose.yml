@@ -1,6 +1,9 @@
-version "3.9"
+version: "3.9"
 
 volumes:
+  simulation:
+
+networks:
   simulation:
 
 services:
@@ -10,8 +13,13 @@ services:
       - "3306:3306"
     volumes:
       - simulation:/mysql:/var/lib/mysql
+    networks:
+      - "simulation"
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=simulation
       - MYSQL_USER=hoyshanist
       - MYSQL_PASSWORD=hoyshanist
+    deploy:
+      restart_policy:
+        condition: on-failure

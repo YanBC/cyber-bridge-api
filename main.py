@@ -3,6 +3,7 @@ import multiprocessing
 import logging
 from typing import Tuple
 import xml.etree.ElementTree as ET
+import sys
 
 from utils import (
     load_json, load_tree, logging_wrapper)
@@ -118,9 +119,13 @@ def main(args: argparse.Namespace):
         loop=loop)
     logging.info(f"err_code: {result.err_code}")
     logging.info(f"criteria: {result.criteria}")
+    return result.err_code.value == 0
 
 
 if __name__ == "__main__":
     args = get_args()
     log_dir = args.log_dir
-    main(log_dir, 'main', args)
+    if not main(log_dir, 'main', args):
+        sys.exit(1)
+    else:
+        sys.exit(0)
