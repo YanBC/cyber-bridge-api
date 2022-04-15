@@ -1,4 +1,6 @@
-{  
+{
     "config": "./scenario_configs/run_1000km.xml",
-    "scenario": "FreeRun"    
+    "sumo": "sumo/examples/Town01.sumocfg",
+    "loop": true,
+    "scenario": "FreeRun"
 }

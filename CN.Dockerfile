@@ -38,9 +38,18 @@ RUN python3.7 -m pip install -i https://mirrors.aliyun.com/pypi/simple \
     -r ./requirements.txt \
     -r db/requirements.txt \
     -r service_discovery/requirements.txt \
-    -r grpc_simaster/requirements.txt
-ENV PYTHONPATH=/simulator/scenario_runner:/third-parties/carla/PythonAPI:/third-parties/carla/PythonAPI/carla
+    -r grpc_simaster/requirements.txt \
+    -r sumo/requirements.txt
+
+RUN apt-get update && \
+    apt-get install -yq software-properties-common && \
+    add-apt-repository ppa:sumo/stable && \
+    apt update && \
+    apt install -y sumo sumo-tools sumo-doc
+
+ENV PYTHONPATH=/simulator/sumo:/simulator/scenario_runner:/third-parties/carla/PythonAPI:/third-parties/carla/PythonAPI/carla
 ENV SCENARIO_RUNNER_ROOT=/simulator/scenario_runner
+ENV SUMO_HOME=/usr/share/sumo
 
 RUN cd /usr/bin/ && \
 rm python3 && \

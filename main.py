@@ -1,6 +1,8 @@
 import argparse
 import multiprocessing
 import logging
+from typing import Tuple
+import xml.etree.ElementTree as ET
 
 from utils import (
     load_json, load_tree, logging_wrapper)
@@ -57,11 +59,9 @@ def get_args():
         '--apollo-config',
         default='./apollo_configs/pnc_testing.json',
         help='path to apollo config file (default: apollo_configs/pnc_testing.json)')
-    argparser.add_argument('--configFile',
-                           default='./scenario_configs/'
-                           'free_ride.json',
-                           help='Provide a scenario configuration file (*.json), '
-                           'default: scenario_configs/free_ride.json')
+    argparser.add_argument('configFile',
+                           help='Scenario configuration file (*.json), '
+                           'example: scenario_configs/run_1000km.json')
     argparser.add_argument("--fps",
                             type=int,
                             default=50,
@@ -92,6 +92,8 @@ def main(args: argparse.Namespace):
     sr_config = load_json(args.configFile)
     scenario_name = sr_config['scenario']
     scenario_config_tree = load_tree(sr_config['config'])
+    sumo_cfg = sr_config.get("sumo", "")
+    loop = sr_config.get("loop", False)
 
     # start simulation
     stop_event = multiprocessing.Event()
@@ -111,7 +113,9 @@ def main(args: argparse.Namespace):
         log_dir=log_dir,
         ego_role_name=ego_role_name,
         carla_timeout=carla_timeout,
-        show=show)
+        show=show,
+        sumo_cfg=sumo_cfg,
+        loop=loop)
     logging.info(f"err_code: {result.err_code}")
     logging.info(f"criteria: {result.criteria}")
 

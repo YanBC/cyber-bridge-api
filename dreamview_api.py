@@ -3,9 +3,8 @@ import json
 import logging
 import carla
 from typing import List
-from utils import longitudinal_offset, longitudinal_offset_by_yaw
+from utils import longitudinal_offset
 import time
-import random
 
 
 class Connection:
@@ -152,93 +151,6 @@ class Connection:
         self.ws.send(
             json.dumps({"type": "HMIAction", "action": "CHANGE_MODE", "value": mode})
         )
-        return
-
-
-class RouteManagement:
-    def __init__(
-            self,
-            actor: carla.Actor,
-            init_destination: carla.Waypoint,
-            world: carla.World,
-            ip: str,
-            port: int = 8888):
-        self.url = f"ws://{ip}:{port}/websocket"
-        self.ws = create_connection(self.url)
-        self.destination = init_destination.transform.location
-        self.actor = actor
-        self.map = world.get_map()
-        self.spawn_points = self.map.get_spawn_points()
-        self.min_distance_to_destination = 10.0  # m, at least 10m
-
-    def __del__(self):
-        self.ws.close()
-
-    def dir_is_same(self, actor: carla.Actor, dest: carla.Location):
-        ve_dir = actor.get_transform().get_forward_vector()
-        wp = self.map.get_waypoint(dest)
-        wp_dir = wp.transform.get_forward_vector()
-        dot_ve_wp = ve_dir.x * wp_dir.x + ve_dir.y * wp_dir.y + ve_dir.z * wp_dir.z
-        return True if dot_ve_wp > 0 else False
-
-    def update(self):
-        actor_location = self.actor.get_location()
-        ori_destination = self.destination
-        if actor_location.distance(ori_destination) < self.min_distance_to_destination \
-           and self.dir_is_same(self.actor, ori_destination):
-            random.shuffle(self.spawn_points)
-            if self.spawn_points[0].location != self.destination:
-                self.destination = self.spawn_points[0].location
-            else:
-                self.destination = self.spawn_points[1].location
-
-            start_wpt = self.map.get_waypoint(actor_location)
-            end_wpt = self.map.get_waypoint(self.destination)
-            self.set_route_path(start_wpt, ori_destination, end_wpt)
-
-    def set_route_path(
-            self,
-            veh_ref_pos: carla.Waypoint,
-            ori_end_loc: carla.Location,
-            end_pos: carla.Waypoint,
-            rear_to_center_in_x: float = -1.4224) -> None:
-        '''
-        rear_to_center_in_x is the offset between location of
-        the car and the location of the gps sensor
-        '''
-        veh_ref_location = veh_ref_pos.transform.location
-        actor_yaw = self.actor.get_transform().rotation.yaw
-        start_location = longitudinal_offset_by_yaw(veh_ref_pos, rear_to_center_in_x, actor_yaw)
-        end_location = end_pos.transform.location
-        ori_end_location = ori_end_loc
-
-        json_msg = json.dumps({
-            "type": "SendRoutingRequest",
-            "start": {
-                "x": start_location.x,
-                "y": -start_location.y,
-                "z": 0
-            },
-            "end": {
-                "x": end_location.x,
-                "y": -end_location.y,
-                "z": 0
-            },
-            "waypoint": [
-                {
-                    "x": veh_ref_location.x,
-                    "y": -veh_ref_location.y,
-                    "z": 0
-                },
-                {
-                    "x": ori_end_location.x,
-                    "y": -ori_end_location.y,
-                    "z": 0
-                }
-            ]
-        })
-        print("{}".format(json_msg))
-        self.ws.send(json_msg)
         return
 
 
