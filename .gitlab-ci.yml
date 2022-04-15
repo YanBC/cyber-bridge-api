@@ -21,6 +21,7 @@ build-image:       # This job runs in the build stage, which runs first.
   timeout: 3 hours
   only:
     - main
+    - dev
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
   script:
