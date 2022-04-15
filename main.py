@@ -1,8 +1,6 @@
 import argparse
 import multiprocessing
 import logging
-from typing import Tuple
-import xml.etree.ElementTree as ET
 import sys
 
 from utils import (

@@ -147,11 +147,12 @@ def route_manager(args: RouteManagerArgs,
             sim_world.wait_for_tick()
             manager_route.route_update()
 
+    except KeyboardInterrupt:
+        logging.info("keyboard interrupt received, exiting...")
+        error_code = RouteManagerError.USER_INTERRUPT
     except Exception as e:
-        if isinstance(e, KeyboardInterrupt):
-            error_code = RouteManagerError.USER_INTERRUPT
-        else:
-            error_code = RouteManagerError.UNKNOWN_ERROR
+        logging.error(e)
+        error_code = RouteManagerError.UNKNOWN_ERROR
 
     finally:
         if not stop_event.is_set():

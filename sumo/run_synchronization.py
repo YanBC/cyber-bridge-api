@@ -255,7 +255,10 @@ def synchronization_loop(args):
                 time.sleep(args.step_length - elapsed)
 
     except KeyboardInterrupt:
-        logging.info('Cancelled by user.')
+        logging.info("keyboard interrupt received, exiting...")
+
+    except Exception as e:
+        logging.error(e)
 
     finally:
         logging.info('Cleaning synchronization')

@@ -382,9 +382,15 @@ def start_simulation(
                 integrated_sumo_result=integrated_sumo_result)
         return result
 
+    except KeyboardInterrupt:
+        logging.info("keyboard interrupt received, exiting...")
+        error_code = ErrorCodes.USER_INTERRUPT
+        result.set_err_code(error_code)
+        return result
+
     except Exception as e:
         logging.error(e)
-        error_code = ScenarioRunError.UNKNOWN_ERROR
+        error_code = ErrorCodes.UNKNOWN_ERROR
         result.set_err_code(error_code)
         return result
 

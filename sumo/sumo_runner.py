@@ -2,6 +2,7 @@
 
 import sys
 import os
+import logging
 
 # ==================================================================================================
 # -- find traci module -----------------------------------------------------------------------------
@@ -91,11 +92,15 @@ def sumo_run(
     try:
         while not stop_event.is_set():
             run_sumo.tick()
+
+    except KeyboardInterrupt:
+        logging.info("keyboard interrupt received, exiting...")
+        error_code = IntegratedSumoError.USER_INTERRUPT
+
     except Exception as e:
-        if isinstance(e, KeyboardInterrupt):
-            error_code = IntegratedSumoError.USER_INTERRUPT
-        else:
-            error_code = IntegratedSumoError.UNKNOWN_ERROR
+        logging.error(e)
+        error_code = IntegratedSumoError.UNKNOWN_ERROR
+
     finally:
         if not stop_event.is_set():
             stop_event.set()

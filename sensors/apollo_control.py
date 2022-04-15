@@ -173,11 +173,12 @@ def listen_and_apply_control(
                 error_code = ApolloControlError.NETWORK_ERROR_CARLA
                 t1_stop_event.set()
                 break
+    except KeyboardInterrupt:
+        logging.info("keyboard interrupt received, exiting...")
+        error_code = ApolloControlError.USER_INTERRUPT
     except Exception as e:
-        if isinstance(e, KeyboardInterrupt):
-            error_code = ApolloControlError.USER_INTERRUPT
-        else:
-            error_code = ApolloControlError.UNKNOWN_ERROR
+        logging.error(e)
+        error_code = ApolloControlError.UNKNOWN_ERROR
     finally:
         if not stop_event.is_set():
             stop_event.set()
