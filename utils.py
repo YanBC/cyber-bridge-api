@@ -154,3 +154,11 @@ def get_gnss_sensor(
         players = carla_world.get_actors().filter('sensor.other.gnss')
         if players and len(players) > 0:
             return players[0]
+
+
+def get_cache_dir():
+    dir_path = os.path.dirname(__file__)
+    cache_path = os.path.join(dir_path, "cache")
+    if not os.path.isdir(cache_path):
+        os.mkdir(cache_path)
+    return cache_path

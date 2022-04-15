@@ -48,8 +48,18 @@ def publish_scenario_configs(endpoint: str):
         key = f"scenario_config.{filename.split('.')[0]}"
         value_dict = {
             "scenario": json_dict['scenario'],
-            "config_xml": xml_str
+            "config_xml": xml_str,
         }
+        if "loop" in json_dict:
+            value_dict['loop'] = json_dict["loop"]
+        # TODO
+        # 把sumo配置发布到配置中心，目前由于配置过多，
+        # 只把配置文件路径发布到配置中心
+        if "sumo" in json_dict:
+            # with open(json_dict['sumo']) as f:
+            #     sumo_str = f.read()
+            # value_dict['sumo_xml'] = sumo_str
+            value_dict['sumo_cfg'] = json_dict['sumo']
         value = json.dumps(value_dict)
         if not publish_config(endpoint, key, value):
             print(f"fail to publish {filepath}")
@@ -92,7 +102,10 @@ if __name__ == "__main__":
     publish_apollo_configs(endpoint)
 
     # test if configs really get pushed
-    scenario, xml_tree = get_scenario_config(
-        endpoint, "scenario_config.781_stop_at_fix_location_cfg")
-    print(scenario)
+    scenario_name, xml_tree, sumo_cfg, loop = \
+        get_scenario_config(
+            endpoint, "scenario_config.run_1000km")
+    print(scenario_name)
     print(xml_tree)
+    print(sumo_cfg)
+    print(loop)

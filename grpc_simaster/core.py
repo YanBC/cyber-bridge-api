@@ -14,28 +14,6 @@ from db.error_codes import ErrorCodes
 from db.mysql_utils import create_connection, save_result
 
 
-def get_configs(
-        endpoint, scenario_config_id,
-        sensor_config_id, apollo_config_id):
-    success = True
-    scenario_name = ""
-    xml_tree = None
-    sensor_config = None
-    apollo_config = None
-    try:
-        scenario_name, xml_tree = get_scenario_config(
-                endpoint, scenario_config_id)
-        sensor_config = get_sensor_config(
-                endpoint, sensor_config_id)
-        apollo_config = get_apollo_config(
-                endpoint, apollo_config_id)
-    except Exception as e:
-        success = False
-        logging.error(f"error in acquiring configs, {e}")
-    finally:
-        return success, scenario_name, xml_tree, sensor_config, apollo_config
-
-
 def write_to_db(
         db_user,
         db_password,
@@ -151,7 +129,8 @@ def run_scenario(
     ############################################################
     stop_event = multiprocessing.Event()
     try:
-        scenario_name, xml_tree = get_scenario_config(
+        scenario_name, xml_tree, sumo_cfg, loop = \
+             get_scenario_config(
                 centre_endpoint, scenario_config_id)
         sensor_config = get_sensor_config(
                 centre_endpoint, sensor_config_id)
@@ -179,9 +158,11 @@ def run_scenario(
 
         # using default configs
         fps = 50
-        ego_role_name='hero'
-        carla_timeout=20.0
-        show=False
+        ego_role_name = 'hero'
+        carla_timeout = 20.0
+        show = False
+        # grpc server should not run in loop mode
+        loop = False
 
         # TODO
         # duration is hardcoded to 5 mins because there is
@@ -238,7 +219,9 @@ def run_scenario(
         log_dir=log_dir,
         ego_role_name=ego_role_name,
         carla_timeout=carla_timeout,
-        show=show)
+        show=show,
+        sumo_cfg=sumo_cfg,
+        loop=loop)
     if not stop_event.is_set():
         stop_event.set()
     logging.info(f"finish simulation, task_id: {task_id}")

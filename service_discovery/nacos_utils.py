@@ -9,6 +9,9 @@ from typing import Tuple
 import nacos
 from redis import Redis
 from pottery import Redlock, TooManyExtensions
+# import os
+# from datetime import datetime
+# from utils import get_cache_dir
 
 # TODO: should be in a config file or as input params
 LEASE_SERVICE_NAME = "simulation.lease"
@@ -144,7 +147,17 @@ def get_scenario_config(
 
     scenario_name = config['scenario']
     xml_tree = ET.ElementTree(ET.fromstring(config['config_xml']))
-    return scenario_name, xml_tree
+    loop = config.get("loop", False)
+    sumo_cfg = config.get("sumo_cfg", "")
+    # if sumo_xml != "":
+    #     cache_dir = get_cache_dir()
+    #     timestr = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    #     sumo_cfg = os.path.join(
+    #         cache_dir, f"sumo_cfg-{timestr}.sumocfg")
+    #     with open(sumo_cfg, "w") as f:
+    #         f.write(sumo_xml)
+
+    return scenario_name, xml_tree, sumo_cfg, loop
 
 
 def get_sensor_config(
